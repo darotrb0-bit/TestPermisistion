@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="km">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ប្រព័ន្ធសុំច្បាប់ស្វ័យប្រវត្តិ</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram Web App script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Kantumruy Pro", sans-serif;
+        background-color: var(--tg-theme-bg-color, #f3f4f6);
+        color: var(--tg-theme-text-color, #111827);
+      }
+      .form-container {
+        background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+        border-radius: 12px;
+        padding: 24px;
+        margin: 16px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        color: #111827;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+      }
+      .submit-button {
+        width: 100%;
+        padding: 14px;
+        border-radius: 8px;
+        font-weight: 700;
+        color: #ffffff;
+        background: linear-gradient(to right, #3b82f6, #6366f1);
+        border: none;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.2s;
+      }
+      .submit-button:hover {
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+          0 4px 6px -4px rgb(0 0 0 / 0.1);
+        transform: translateY(-2px);
+      }
+      .submit-button:active {
+        transform: translateY(0);
+      }
+      .submit-button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      #notification {
+        position: fixed;
+        top: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: top 0.5s ease-in-out;
+        z-index: 100;
+      }
+      #notification.show {
+        top: 20px;
+      }
+    </style>
+  </head>
+  <body class="antialiased">
+    <div class="max-w-md mx-auto">
+      <!-- Header -->
+      <header class="flex flex-col items-center justify-center p-4">
+        <img
+          src="https://i.postimg.cc/wvFt9k8Y/di3-copy.png"
+          alt="Company Logo"
+          class="w-20 h-20 object-contain mb-3"
+        />
+        <h1
+          class="text-xl font-bold text-gray-800"
+          style="color: var(--tg-theme-text-color, #1f2937)"
+        >
+          ក្រុមហ៊ុន ឧស្សាហកម្មឌីជីថល
+        </h1>
+        <p
+          class="text-sm text-gray-500"
+          style="color: var(--tg-theme-hint-color, #6b7280)"
+        >
+          ប្រព័ន្ធសុំច្បាប់ស្វ័យប្រវត្តិ
+        </p>
+      </header>
+
+      <!-- Leave Request Form -->
+      <main class="form-container">
+        <form id="leave-form">
+          <div class="space-y-5">
+            <!-- Employee Name -->
+            <div>
+              <label for="employee-name" class="block text-sm font-medium mb-1"
+                >ឈ្មោះ​របស់​អ្នក</label
+              >
+              <input
+                type="text"
+                id="employee-name"
+                name="employee_name"
+                class="form-input"
+                placeholder="ឧ. សុខ ចាន់ដារ៉ា"
+                required
+              />
+            </div>
+
+            <!-- Employee ID -->
+            <div>
+              <label for="employee-id" class="block text-sm font-medium mb-1"
+                >លេខសម្គាល់បុគ្គលិក</label
+              >
+              <input
+                type="text"
+                id="employee-id"
+                name="employee_id"
+                class="form-input"
+                placeholder="ឧ. DI-0012"
+                required
+              />
+            </div>
+
+            <!-- Leave Type -->
+            <div>
+              <label for="leave-type" class="block text-sm font-medium mb-1"
+                >ប្រភេទនៃការសុំច្បាប់</label
+              >
+              <select
+                id="leave-type"
+                name="leave_type"
+                class="form-select"
+                required
+              >
+                <option value="" disabled selected>-- សូមជ្រើសរើស --</option>
+                <option value="annual_leave">ច្បាប់សម្រាកប្រចាំឆ្នាំ</option>
+                <option value="sick_leave">ច្បាប់ឈឺ</option>
+                <option value="unpaid_leave">ច្បាប់មិនគិតបៀវត្ស</option>
+                <option value="maternity_leave">ច្បាប់លំហែមាតុភាព</option>
+                <option value="personal_leave">ច្បាប់ផ្ទាល់ខ្លួន</option>
+              </select>
+            </div>
+
+            <!-- Date Range -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="start-date" class="block text-sm font-medium mb-1"
+                  >ថ្ងៃចាប់ផ្តើម</label
+                >
+                <input
+                  type="date"
+                  id="start-date"
+                  name="start_date"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div>
+                <label for="end-date" class="block text-sm font-medium mb-1"
+                  >ថ្ងៃสิ้นสุด</label
+                >
+                <input
+                  type="date"
+                  id="end-date"
+                  name="end_date"
+                  class="form-input"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Reason -->
+            <div>
+              <label for="reason" class="block text-sm font-medium mb-1"
+                >មូលហេតុ</label
+              >
+              <textarea
+                id="reason"
+                name="reason"
+                rows="4"
+                class="form-textarea"
+                placeholder="សរសេរមូលហេតុខ្លីៗ..."
+                required
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Main Button Placeholder -->
+          <div id="main-button-placeholder" class="mt-6">
+            <button type="submit" class="submit-button" id="submit-btn">
+              ដាក់ស្នើ
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <!-- Notification element -->
+    <div id="notification"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Configure the main button
+        tg.MainButton.setText("ដាក់ស្នើ");
+        tg.MainButton.show();
+
+        const form = document.getElementById("leave-form");
+        const submitBtn = document.getElementById("submit-btn");
+        const notification = document.getElementById("notification");
+
+        function showNotification(message, isSuccess) {
+          notification.textContent = message;
+          notification.className = isSuccess
+            ? "bg-green-500 text-white"
+            : "bg-red-500 text-white";
+          notification.classList.add("show");
+
+          setTimeout(() => {
+            notification.classList.remove("show");
+          }, 3000);
+        }
+
+        function validateForm() {
+          const requiredFields = form.querySelectorAll("[required]");
+          for (const field of requiredFields) {
+            if (!field.value.trim()) {
+              return false;
+            }
+          }
+          const startDate = new Date(
+            document.getElementById("start-date").value
+          );
+          const endDate = new Date(document.getElementById("end-date").value);
+          if (endDate < startDate) {
+            return false;
+          }
+          return true;
+        }
+
+        function handleFormSubmission() {
+          if (!validateForm()) {
+            showNotification(
+              "សូមពិនិត្យមើលទិន្នន័យឡើងវិញ។ កាលបរិច្ឆេទสิ้นสุดត្រូវតែធំជាងឬស្មើថ្ងៃចាប់ផ្តើម។",
+              false
+            );
+            tg.MainButton.hideProgress();
+            tg.MainButton.enable();
+            return;
+          }
+
+          tg.MainButton.showProgress();
+          tg.MainButton.disable();
+
+          // Get form data
+          const formData = new FormData(form);
+          const data = {
+            employee_name: formData.get("employee_name"),
+            employee_id: formData.get("employee_id"),
+            leave_type: formData.get("leave_type"),
+            start_date: formData.get("start_date"),
+            end_date: formData.get("end_date"),
+            reason: formData.get("reason"),
+            submitted_at: new Date().toISOString(),
+          };
+
+          // --- Sending data to the bot ---
+          // The bot will receive this data string.
+          // You need to handle it on your bot's backend.
+          tg.sendData(JSON.stringify(data));
+
+          // Simulate a network delay and then close
+          setTimeout(() => {
+            // This command closes the Mini App
+            tg.close();
+          }, 1500);
+        }
+
+        // Handle submission via Telegram's Main Button
+        tg.onEvent("mainButtonClicked", handleFormSubmission);
+
+        // Fallback for browsers that don't have Telegram integration (for testing)
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          showNotification(
+            "ការសុំច្បាប់របស់អ្នកត្រូវបានដាក់ស្នើដោយជោគជ័យ!",
+            true
+          );
+          submitBtn.disabled = true;
+          submitBtn.textContent = "កំពុងដំណើរការ...";
+
+          // This part is for testing in a normal browser
+          // In production, the mainButtonClicked event will be used
+          if (!tg.initData) {
+            setTimeout(() => {
+              form.reset();
+              submitBtn.disabled = false;
+              submitBtn.textContent = "ដាក់ស្នើ";
+            }, 2000);
+          }
+        });
+
+        // Hide the original submit button if Telegram Main Button is available
+        if (tg.initData) {
+          document.getElementById("main-button-placeholder").style.display =
+            "none";
+        }
+      });
+    </script>
+  </body>
+</html>
