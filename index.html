@@ -1,335 +1,504 @@
 <!DOCTYPE html>
 <html lang="km">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ប្រព័ន្ធសុំច្បាប់ស្វ័យប្រវត្តិ</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>កម្មវិធីបង្កើតគណនី</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Telegram Web App script -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- face-api.js for face recognition -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <!-- Google Fonts for a Khmer font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-      body {
-        font-family: "Kantumruy Pro", sans-serif;
-        background-color: var(--tg-theme-bg-color, #f3f4f6);
-        color: var(--tg-theme-text-color, #111827);
-      }
-      .form-container {
-        background-color: var(--tg-theme-secondary-bg-color, #ffffff);
-        border-radius: 12px;
-        padding: 24px;
-        margin: 16px;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
-          0 2px 4px -2px rgb(0 0 0 / 0.1);
-      }
-      .form-input,
-      .form-select,
-      .form-textarea {
-        width: 100%;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #d1d5db;
-        background-color: #f9fafb;
-        color: #111827;
-        transition: border-color 0.2s, box-shadow 0.2s;
-      }
-      .form-input:focus,
-      .form-select:focus,
-      .form-textarea:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
-      }
-      .submit-button {
-        width: 100%;
-        padding: 14px;
-        border-radius: 8px;
-        font-weight: 700;
-        color: #ffffff;
-        background: linear-gradient(to right, #3b82f6, #6366f1);
-        border: none;
-        cursor: pointer;
-        transition: transform 0.1s, box-shadow 0.2s;
-      }
-      .submit-button:hover {
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
-          0 4px 6px -4px rgb(0 0 0 / 0.1);
-        transform: translateY(-2px);
-      }
-      .submit-button:active {
-        transform: translateY(0);
-      }
-      .submit-button:disabled {
-        background: #9ca3af;
-        cursor: not-allowed;
-      }
-      #notification {
-        position: fixed;
-        top: -100px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: top 0.5s ease-in-out;
-        z-index: 100;
-      }
-      #notification.show {
-        top: 20px;
-      }
+        body {
+            font-family: 'Kantumruy Pro', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #cameraModal {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        /* Circular video preview styles */
+        #videoContainer {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
+            background-color: #000;
+            transform: scaleX(-1); /* Mirror the video feed */
+        }
+        #video, #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+        }
+        #scannerEffect {
+            --scanner-color: #3b82f6;
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 180deg at 50% 50%,
+                rgba(59, 130, 246, 0) 0%,
+                var(--scanner-color) 50%,
+                rgba(59, 130, 246, 0) 100%
+            );
+            animation: scanner-spin 2s linear infinite;
+        }
+        @keyframes scanner-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Laser Scanner Styles */
+        #laserScanner {
+            position: absolute;
+            inset: 0.5rem; /* Matches parent's p-2 padding */
+            border-radius: 50%;
+            overflow: hidden;
+            pointer-events: none; /* Let clicks pass through */
+            z-index: 2;
+        }
+
+        #laserScanner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #3b82f6;
+            box-shadow: 0 0 5px rgba(59, 130, 246, 0.8), 0 0 10px rgba(59, 130, 246, 0.8), 0 0 15px rgba(255, 255, 255, 0.8);
+            animation: laser-scan-line 2.5s ease-in-out infinite;
+        }
+
+        @keyframes laser-scan-line {
+            0% {
+                left: 15%;
+            }
+            50% {
+                left: 85%;
+            }
+            100% {
+                left: 15%;
+            }
+        }
+        /* Helper class for mobile view adjustments */
+        .form-element-hidden-on-focus {
+            transition: all 0.2s ease-in-out;
+        }
     </style>
-  </head>
-  <body class="antialiased">
-    <div class="max-w-md mx-auto">
-      <!-- Header -->
-      <header class="flex flex-col items-center justify-center p-4">
-        <img
-          src="https://i.postimg.cc/wvFt9k8Y/di3-copy.png"
-          alt="Company Logo"
-          class="w-20 h-20 object-contain mb-3"
-        />
-        <h1
-          class="text-xl font-bold text-gray-800"
-          style="color: var(--tg-theme-text-color, #1f2937)"
-        >
-          ក្រុមហ៊ុន ឧស្សាហកម្មឌីជីថល
-        </h1>
-        <p
-          class="text-sm text-gray-500"
-          style="color: var(--tg-theme-hint-color, #6b7280)"
-        >
-          ប្រព័ន្ធសុំច្បាប់ស្វ័យប្រវត្តិ
-        </p>
-      </header>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-      <!-- Leave Request Form -->
-      <main class="form-container">
-        <form id="leave-form">
-          <div class="space-y-5">
-            <!-- Employee Name -->
-            <div>
-              <label for="employee-name" class="block text-sm font-medium mb-1"
-                >ឈ្មោះ​របស់​អ្នក</label
-              >
-              <input
-                type="text"
-                id="employee-name"
-                name="employee_name"
-                class="form-input"
-                placeholder="ឧ. សុខ ចាន់ដារ៉ា"
-                required
-              />
+    <!-- Login Form Container (Initially Hidden) -->
+    <div id="appContainer" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-6 hidden">
+        <div id="formHeader" class="text-center form-element-hidden-on-focus">
+            <h1 class="text-2xl font-bold text-gray-800">ទម្រង់ចូលគណនី</h1>
+            <p class="text-gray-500 mt-2">សូមជ្រើសរើសព័ត៌មានរបស់អ្នក</p>
+        </div>
+
+        <!-- Form Content -->
+        <form id="accountForm" class="space-y-6">
+            <!-- Class Input -->
+            <div id="classInputContainer" class="form-element-hidden-on-focus">
+                <label for="classInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលថ្នាក់រៀន</label>
+                <input list="classList" id="classInput" name="classInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                <datalist id="classList"></datalist>
             </div>
 
-            <!-- Employee ID -->
-            <div>
-              <label for="employee-id" class="block text-sm font-medium mb-1"
-                >លេខសម្គាល់បុគ្គលិក</label
-              >
-              <input
-                type="text"
-                id="employee-id"
-                name="employee_id"
-                class="form-input"
-                placeholder="ឧ. DI-0012"
-                required
-              />
+            <!-- ID Input -->
+            <div id="idInputContainer" class="form-element-hidden-on-focus">
+                <label for="idInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលអត្តលេខ</label>
+                <input list="idList" id="idInput" name="idInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off" disabled>
+                <datalist id="idList"></datalist>
             </div>
 
-            <!-- Leave Type -->
-            <div>
-              <label for="leave-type" class="block text-sm font-medium mb-1"
-                >ប្រភេទនៃការសុំច្បាប់</label
-              >
-              <select
-                id="leave-type"
-                name="leave_type"
-                class="form-select"
-                required
-              >
-                <option value="" disabled selected>-- សូមជ្រើសរើស --</option>
-                <option value="annual_leave">ច្បាប់សម្រាកប្រចាំឆ្នាំ</option>
-                <option value="sick_leave">ច្បាប់ឈឺ</option>
-                <option value="unpaid_leave">ច្បាប់មិនគិតបៀវត្ស</option>
-                <option value="maternity_leave">ច្បាប់លំហែមាតុភាព</option>
-                <option value="personal_leave">ច្បាប់ផ្ទាល់ខ្លួន</option>
-              </select>
+            <!-- Name Display -->
+            <div id="nameDisplayContainer" class="bg-gray-50 p-4 rounded-md text-center form-element-hidden-on-focus">
+                <label class="text-sm font-medium text-gray-500">ឈ្មោះសិស្ស</label>
+                <p id="nameDisplay" class="text-xl font-bold text-indigo-600 mt-1">-</p>
             </div>
-
-            <!-- Date Range -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label for="start-date" class="block text-sm font-medium mb-1"
-                  >ថ្ងៃចាប់ផ្តើម</label
-                >
-                <input
-                  type="date"
-                  id="start-date"
-                  name="start_date"
-                  class="form-input"
-                  required
-                />
-              </div>
-              <div>
-                <label for="end-date" class="block text-sm font-medium mb-1"
-                  >ថ្ងៃสิ้นสุด</label
-                >
-                <input
-                  type="date"
-                  id="end-date"
-                  name="end_date"
-                  class="form-input"
-                  required
-                />
-              </div>
-            </div>
-
-            <!-- Reason -->
-            <div>
-              <label for="reason" class="block text-sm font-medium mb-1"
-                >មូលហេតុ</label
-              >
-              <textarea
-                id="reason"
-                name="reason"
-                rows="4"
-                class="form-textarea"
-                placeholder="សរសេរមូលហេតុខ្លីៗ..."
-                required
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- Main Button Placeholder -->
-          <div id="main-button-placeholder" class="mt-6">
-            <button type="submit" class="submit-button" id="submit-btn">
-              ដាក់ស្នើ
-            </button>
-          </div>
         </form>
-      </main>
+         <p id="errorMessage" class="text-center text-red-500 hidden"></p>
+    </div>
+    
+    <!-- Loading Indicator (Visible at start) -->
+    <div id="loader" class="flex flex-col items-center justify-center space-y-2">
+        <div class="loader"></div>
+        <p class="text-gray-500">កំពុងตรวจสอบ...</p>
     </div>
 
-    <!-- Notification element -->
-    <div id="notification"></div>
+    <!-- Home Page UI (Initially Hidden) -->
+    <div id="homePage" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-6 text-center hidden">
+        <svg class="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800">ការចូលជោគជ័យ!</h1>
+        <p class="text-gray-600 text-lg">សូមស្វាគមន៍, <span id="homeName" class="font-bold"></span>!</p>
+        <!-- NEW Logout Button -->
+        <button id="logoutButton" class="mt-4 bg-red-500 text-white font-bold py-2 px-6 rounded-md hover:bg-red-600 transition-colors">ចាកចេញ</button>
+    </div>
+
+
+    <!-- Camera Verification Modal -->
+    <div id="cameraModal" class="fixed inset-0 w-full h-full flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
+            <h2 class="text-xl font-bold mb-4">សូមដាក់មុខនៅចំកណ្តាល</h2>
+            <div class="relative w-64 h-64 mx-auto mb-4 p-2">
+                <div id="scannerEffect"></div>
+                <div id="laserScanner"></div>
+                <div id="videoContainer">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+            </div>
+            <p id="cameraStatus" class="text-gray-600 mb-4 h-6">កំពុងចាប់ផ្តើមកាមេរ៉ា...</p>
+            <button id="closeModalButton" class="bg-red-500 text-white font-bold py-2 px-6 rounded-md hover:bg-red-600">បោះបង់</button>
+        </div>
+    </div>
+
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Initialize Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.ready();
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- Configuration ---
+            const SHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
+            const SHEET_NAME = 'DIList';
+            const RANGE = 'E9:AA';
+            const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${RANGE}`;
+            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadewhohacks/face-api.js@0.22.2/weights';
 
-        // Configure the main button
-        tg.MainButton.setText("ដាក់ស្នើ");
-        tg.MainButton.show();
+            // --- DOM Elements ---
+            const loader = document.getElementById('loader');
+            const appContainer = document.getElementById('appContainer');
+            const accountForm = document.getElementById('accountForm');
+            const classInput = document.getElementById('classInput');
+            const idInput = document.getElementById('idInput');
+            const nameDisplay = document.getElementById('nameDisplay');
+            const classDatalist = document.getElementById('classList');
+            const idDatalist = document.getElementById('idList');
+            const errorMessage = document.getElementById('errorMessage');
+            const homePage = document.getElementById('homePage');
+            const homeName = document.getElementById('homeName');
+            const logoutButton = document.getElementById('logoutButton');
+            const cameraModal = document.getElementById('cameraModal');
+            const video = document.getElementById('video');
+            const overlay = document.getElementById('overlay');
+            const cameraStatus = document.getElementById('cameraStatus');
+            const closeModalButton = document.getElementById('closeModalButton');
+            
+            // --- Mobile UI Elements ---
+            const formHeader = document.getElementById('formHeader');
+            const classInputContainer = document.getElementById('classInputContainer');
+            const idInputContainer = document.getElementById('idInputContainer');
+            const nameDisplayContainer = document.getElementById('nameDisplayContainer');
 
-        const form = document.getElementById("leave-form");
-        const submitBtn = document.getElementById("submit-btn");
-        const notification = document.getElementById("notification");
+            // --- State Management ---
+            let studentData = [];
+            let currentStudent = null;
+            let faceMatcher = null;
+            let videoInterval = null;
+            let areModelsLoaded = false;
+            let isVerifying = false; 
 
-        function showNotification(message, isSuccess) {
-          notification.textContent = message;
-          notification.className = isSuccess
-            ? "bg-green-500 text-white"
-            : "bg-red-500 text-white";
-          notification.classList.add("show");
-
-          setTimeout(() => {
-            notification.classList.remove("show");
-          }, 3000);
-        }
-
-        function validateForm() {
-          const requiredFields = form.querySelectorAll("[required]");
-          for (const field of requiredFields) {
-            if (!field.value.trim()) {
-              return false;
+            // --- NEW: Session Management ---
+            function checkForSavedSession() {
+                const savedStudentJSON = localStorage.getItem('loggedInStudent');
+                if (savedStudentJSON) {
+                    try {
+                        const student = JSON.parse(savedStudentJSON);
+                        showHomePage(student);
+                    } catch (e) {
+                        console.error("Failed to parse saved student data", e);
+                        localStorage.removeItem('loggedInStudent');
+                        initializeLoginForm(); // Show login form if data is corrupt
+                    }
+                } else {
+                    initializeLoginForm(); // Show login form if no session found
+                }
             }
-          }
-          const startDate = new Date(
-            document.getElementById("start-date").value
-          );
-          const endDate = new Date(document.getElementById("end-date").value);
-          if (endDate < startDate) {
-            return false;
-          }
-          return true;
-        }
+            
+            function initializeLoginForm() {
+                loader.querySelector('p').textContent = 'កំពុងទាញទិន្នន័យ...';
+                Promise.all([loadModels(), fetchData()]);
+            }
 
-        function handleFormSubmission() {
-          if (!validateForm()) {
-            showNotification(
-              "សូមពិនិត្យមើលទិន្នន័យឡើងវិញ។ កាលបរិច្ឆេទสิ้นสุดត្រូវតែធំជាងឬស្មើថ្ងៃចាប់ផ្តើម។",
-              false
-            );
-            tg.MainButton.hideProgress();
-            tg.MainButton.enable();
-            return;
-          }
+            function showHomePage(student) {
+                loader.classList.add('hidden');
+                appContainer.classList.add('hidden');
+                homeName.textContent = student.name;
+                homePage.classList.remove('hidden');
+            }
+            
+            function logout() {
+                localStorage.removeItem('loggedInStudent');
+                homePage.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                // Reset form state
+                classInput.value = '';
+                idInput.value = '';
+                idInput.disabled = true;
+                idDatalist.innerHTML = '';
+                nameDisplay.textContent = '-';
+                currentStudent = null;
+            }
 
-          tg.MainButton.showProgress();
-          tg.MainButton.disable();
 
-          // Get form data
-          const formData = new FormData(form);
-          const data = {
-            employee_name: formData.get("employee_name"),
-            employee_id: formData.get("employee_id"),
-            leave_type: formData.get("leave_type"),
-            start_date: formData.get("start_date"),
-            end_date: formData.get("end_date"),
-            reason: formData.get("reason"),
-            submitted_at: new Date().toISOString(),
-          };
+            // --- Main Functions ---
+            async function loadModels() {
+                if (areModelsLoaded) return;
+                console.log('Loading face recognition models...');
+                try {
+                    await Promise.all([
+                        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                    ]);
+                    console.log('Models loaded successfully.');
+                    areModelsLoaded = true;
+                } catch (error) {
+                    console.error("Error loading models: ", error);
+                    showError('បរាជ័យក្នុងការទាញយកម៉ូដែលវិភាគមុខ។');
+                }
+            }
+            
+            async function fetchData() {
+                try {
+                    const response = await fetch(URL);
+                    if (!response.ok) throw new Error(`Network response error: ${response.status}`);
+                    
+                    const text = await response.text();
+                    const jsonString = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+                    const data = JSON.parse(jsonString);
 
-          // --- Sending data to the bot ---
-          // The bot will receive this data string.
-          // You need to handle it on your bot's backend.
-          tg.sendData(JSON.stringify(data));
+                    if (data.status === 'error') throw new Error(data.errors.map(e => e.detailed_message).join(', '));
 
-          // Simulate a network delay and then close
-          setTimeout(() => {
-            // This command closes the Mini App
-            tg.close();
-          }, 1500);
-        }
+                    studentData = data.table.rows.map(row => {
+                        if (!row || !row.c) return null;
+                        const id = row.c[0]?.v;
+                        const name = row.c[7]?.v;
+                        const className = row.c[13]?.v;
+                        let imageUrl = row.c[22]?.v;
 
-        // Handle submission via Telegram's Main Button
-        tg.onEvent("mainButtonClicked", handleFormSubmission);
+                        if (imageUrl && imageUrl.includes('drive.google.com')) {
+                           imageUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl.replace('/file/d/', '/uc?export=view&id='))}`;
+                        }
+                        
+                        if (id && name && className && imageUrl) {
+                            return { id: String(id), name: String(name), class: String(className), imageUrl };
+                        }
+                        return null;
+                    }).filter(Boolean);
 
-        // Fallback for browsers that don't have Telegram integration (for testing)
-        form.addEventListener("submit", function (e) {
-          e.preventDefault();
-          showNotification(
-            "ការសុំច្បាប់របស់អ្នកត្រូវបានដាក់ស្នើដោយជោគជ័យ!",
-            true
-          );
-          submitBtn.disabled = true;
-          submitBtn.textContent = "កំពុងដំណើរការ...";
+                    populateClasses();
+                    loader.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    showError('បរាជ័យក្នុងការទាញទិន្នន័យពី Google Sheets។');
+                }
+            }
 
-          // This part is for testing in a normal browser
-          // In production, the mainButtonClicked event will be used
-          if (!tg.initData) {
-            setTimeout(() => {
-              form.reset();
-              submitBtn.disabled = false;
-              submitBtn.textContent = "ដាក់ស្នើ";
-            }, 2000);
-          }
+            // --- UI Update Functions ---
+            function populateClasses() {
+                const uniqueClasses = [...new Set(studentData.map(item => item.class))];
+                classDatalist.innerHTML = '';
+                uniqueClasses.sort().forEach(className => {
+                    const option = document.createElement('option');
+                    option.value = className;
+                    classDatalist.appendChild(option);
+                });
+            }
+
+            function handleClassChange() {
+                idDatalist.innerHTML = '';
+                idInput.value = '';
+                nameDisplay.textContent = '-';
+                currentStudent = null;
+
+                const filteredData = studentData.filter(item => item.class === classInput.value);
+                if (filteredData.length > 0) {
+                    filteredData.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        idDatalist.appendChild(option);
+                    });
+                    idInput.disabled = false;
+                } else {
+                    idInput.disabled = true;
+                }
+            }
+
+            async function handleIdChange() {
+                if (isVerifying) return;
+                currentStudent = studentData.find(item => item.id === idInput.value);
+                
+                if (currentStudent) {
+                    nameDisplay.textContent = currentStudent.name;
+                    await startVerification();
+                } else {
+                    nameDisplay.textContent = '-';
+                }
+            }
+
+            function showError(message) {
+                loader.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                errorMessage.classList.remove('hidden');
+                errorMessage.textContent = message;
+            }
+
+            // --- Face Verification Logic ---
+            function stopCameraStream() {
+                if (videoInterval) {
+                    clearInterval(videoInterval);
+                    videoInterval = null;
+                }
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+                video.removeEventListener('play', onVideoPlay);
+            }
+
+            async function startVerification() {
+                if (!currentStudent || !areModelsLoaded) return;
+                
+                isVerifying = true; 
+                cameraModal.classList.remove('hidden');
+                cameraStatus.textContent = 'កំពុងរៀបចំ...';
+                
+                try {
+                    const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+                    
+                    cameraStatus.textContent = 'កំពុងដំណើរការរូបថតយោង...';
+                    const referenceImage = await faceapi.fetchImage(currentStudent.imageUrl);
+                    const referenceDetection = await faceapi.detectSingleFace(referenceImage, detectionOptions)
+                        .withFaceLandmarks().withFaceDescriptor();
+                    
+                    if (!referenceDetection) throw new Error("រកមិនឃើញមុខនៅក្នុងរូបថតយោងទេ។");
+                    
+                    faceMatcher = new faceapi.FaceMatcher([referenceDetection.descriptor]);
+                    cameraStatus.textContent = 'កំពុងស្នើសុំកាមេរ៉ា...';
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                    video.srcObject = stream;
+                    video.addEventListener('play', onVideoPlay);
+
+                } catch (error) {
+                    console.error("Verification Error:", error);
+                    let userMessage = 'មានបញ្ហាក្នុងការបើកកាមេរ៉ា។';
+                    if (error.name === 'NotReadableError' || (error.message && error.message.includes('Device in use'))) {
+                        userMessage = 'កាមេរ៉ាកំពុងប្រើដោយកម្មវិធីផ្សេង។ សូមបិទកម្មវិធីនោះសិន។';
+                    } else if (error.name === 'NotFoundError') {
+                        userMessage = 'រកមិនឃើញកាមេរ៉ាទេ។ សូមប្រាកដថាបានភ្ជាប់រួចរាល់។';
+                    } else if (error.name === 'NotAllowedError') {
+                        userMessage = 'មិនមានការអនុញ្ញាតឱ្យប្រើកាមេរ៉ាទេ។ សូមពិនិត្យ Permission។';
+                    } else if (error.message.includes("រកមិនឃើញមុខ")) {
+                        userMessage = "បញ្ហារូបថត៖ រកមិនឃើញមុខក្នុងរូបថតដើមរបស់សិស្ស។";
+                    }
+
+                    cameraStatus.textContent = userMessage;
+                    setTimeout(() => closeVerificationModal(true), 4000);
+                }
+            }
+
+            function onVideoPlay() {
+                const displaySize = { width: video.videoWidth, height: video.videoHeight };
+                faceapi.matchDimensions(overlay, displaySize);
+                const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.8 });
+
+                videoInterval = setInterval(async () => {
+                    if (!faceMatcher || !isVerifying) return;
+                    const detections = await faceapi.detectAllFaces(video, detectionOptions)
+                        .withFaceLandmarks().withFaceDescriptors();
+                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+                    
+                    if (resizedDetections.length > 0) {
+                        const bestMatch = faceMatcher.findBestMatch(resizedDetections[0].descriptor);
+                        const confidence = (1 - bestMatch.distance).toFixed(2);
+                        cameraStatus.textContent = `កំពុងផ្ទៀងផ្ទាត់... (${confidence})`;
+                        
+                        if (bestMatch.label !== 'unknown' && bestMatch.distance < 0.5) { 
+                           verificationSuccess();
+                        }
+                    } else {
+                        cameraStatus.textContent = 'រកមិនឃើញមុខ';
+                    }
+                }, 300);
+            }
+
+            function verificationSuccess() {
+                cameraStatus.textContent = 'ជោគជ័យ!';
+                // Save session to localStorage
+                localStorage.setItem('loggedInStudent', JSON.stringify(currentStudent));
+                
+                showHomePage(currentStudent);
+                setTimeout(() => closeVerificationModal(false), 1000);
+            }
+
+            function closeVerificationModal(resetInputs = true) {
+                stopCameraStream();
+                cameraModal.classList.add('hidden');
+                isVerifying = false; 
+                
+                if (resetInputs && idInput.value) {
+                    idInput.value = '';
+                    nameDisplay.textContent = '-';
+                    currentStudent = null;
+                }
+            }
+            
+            // --- Mobile Keyboard UI Adjustment ---
+            function handleInputFocus(focusedElement) {
+                [formHeader, classInputContainer, idInputContainer, nameDisplayContainer].forEach(el => {
+                    if (el !== focusedElement) {
+                        el.classList.add('hidden');
+                    }
+                });
+            }
+
+            function handleInputBlur() {
+                [formHeader, classInputContainer, idInputContainer, nameDisplayContainer].forEach(el => {
+                    el.classList.remove('hidden');
+                });
+            }
+
+            // --- Event Listeners ---
+            classInput.addEventListener('change', handleClassChange);
+            idInput.addEventListener('change', handleIdChange);
+            closeModalButton.addEventListener('click', () => closeVerificationModal(true));
+            logoutButton.addEventListener('click', logout);
+            
+            // Add focus and blur listeners for mobile UI
+            classInput.addEventListener('focus', () => handleInputFocus(classInputContainer));
+            classInput.addEventListener('blur', handleInputBlur);
+            idInput.addEventListener('focus', () => handleInputFocus(idInputContainer));
+            idInput.addEventListener('blur', handleInputBlur);
+
+            // --- Initial Load ---
+            checkForSavedSession();
         });
-
-        // Hide the original submit button if Telegram Main Button is available
-        if (tg.initData) {
-          document.getElementById("main-button-placeholder").style.display =
-            "none";
-        }
-      });
     </script>
-  </body>
+
+</body>
 </html>
+
