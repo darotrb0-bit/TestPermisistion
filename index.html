@@ -138,7 +138,10 @@
                 <p id="nameDisplay" class="text-xl font-bold text-indigo-600 mt-1">-</p>
             </div>
         </form>
-         <p id="errorMessage" class="text-center text-red-500 hidden"></p>
+         <div id="errorContainer" class="text-center hidden">
+            <p id="errorMessage" class="text-red-500"></p>
+            <button id="retryButton" class="mt-4 w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">ព្យាយាមម្ដងទៀត</button>
+        </div>
     </div>
     
     <!-- Loading Indicator (Visible at start) -->
@@ -184,7 +187,8 @@
             const SHEET_NAME = 'DIList';
             const RANGE = 'E9:AA';
             const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${RANGE}`;
-            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadewhohacks/face-api.js@0.22.2/weights';
+            // --- FIX: Updated MODEL_URL to a more reliable NPM-based CDN link ---
+            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
             // --- DOM Elements ---
             const loader = document.getElementById('loader');
@@ -195,7 +199,9 @@
             const nameDisplay = document.getElementById('nameDisplay');
             const classDatalist = document.getElementById('classList');
             const idDatalist = document.getElementById('idList');
+            const errorContainer = document.getElementById('errorContainer');
             const errorMessage = document.getElementById('errorMessage');
+            const retryButton = document.getElementById('retryButton');
             const homePage = document.getElementById('homePage');
             const homeName = document.getElementById('homeName');
             const logoutButton = document.getElementById('logoutButton');
@@ -219,7 +225,7 @@
             let areModelsLoaded = false;
             let isVerifying = false; 
 
-            // --- NEW: Session Management ---
+            // --- Session Management ---
             function checkForSavedSession() {
                 const savedStudentJSON = localStorage.getItem('loggedInStudent');
                 if (savedStudentJSON) {
@@ -229,14 +235,15 @@
                     } catch (e) {
                         console.error("Failed to parse saved student data", e);
                         localStorage.removeItem('loggedInStudent');
-                        initializeLoginForm(); // Show login form if data is corrupt
+                        initializeLoginForm();
                     }
                 } else {
-                    initializeLoginForm(); // Show login form if no session found
+                    initializeLoginForm();
                 }
             }
             
             function initializeLoginForm() {
+                loader.classList.remove('hidden');
                 loader.querySelector('p').textContent = 'កំពុងទាញទិន្នន័យ...';
                 Promise.all([loadModels(), fetchData()]);
             }
@@ -251,6 +258,8 @@
             function logout() {
                 localStorage.removeItem('loggedInStudent');
                 homePage.classList.add('hidden');
+                errorContainer.classList.add('hidden');
+                accountForm.classList.remove('hidden');
                 appContainer.classList.remove('hidden');
                 // Reset form state
                 classInput.value = '';
@@ -310,11 +319,19 @@
 
                     populateClasses();
                     loader.classList.add('hidden');
+                    accountForm.classList.remove('hidden');
                     appContainer.classList.remove('hidden');
                 } catch (error) {
                     console.error('Error fetching data:', error);
                     showError('បរាជ័យក្នុងការទាញទិន្នន័យពី Google Sheets។');
                 }
+            }
+            
+            function handleRetry() {
+                errorContainer.classList.add('hidden');
+                loader.classList.remove('hidden');
+                loader.querySelector('p').textContent = 'កំពុងព្យាយាមម្ដងទៀត...';
+                fetchData();
             }
 
             // --- UI Update Functions ---
@@ -362,7 +379,8 @@
             function showError(message) {
                 loader.classList.add('hidden');
                 appContainer.classList.remove('hidden');
-                errorMessage.classList.remove('hidden');
+                accountForm.classList.add('hidden');
+                errorContainer.classList.remove('hidden');
                 errorMessage.textContent = message;
             }
 
@@ -469,6 +487,10 @@
             
             // --- Mobile Keyboard UI Adjustment ---
             function handleInputFocus(focusedElement) {
+                setTimeout(() => {
+                    focusedElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+
                 [formHeader, classInputContainer, idInputContainer, nameDisplayContainer].forEach(el => {
                     if (el !== focusedElement) {
                         el.classList.add('hidden');
@@ -487,6 +509,7 @@
             idInput.addEventListener('change', handleIdChange);
             closeModalButton.addEventListener('click', () => closeVerificationModal(true));
             logoutButton.addEventListener('click', logout);
+            retryButton.addEventListener('click', handleRetry);
             
             // Add focus and blur listeners for mobile UI
             classInput.addEventListener('focus', () => handleInputFocus(classInputContainer));
@@ -501,4 +524,5 @@
 
 </body>
 </html>
+
 
