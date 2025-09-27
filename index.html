@@ -101,17 +101,15 @@
                 left: 15%;
             }
         }
-        /* Helper class for mobile view adjustments */
-        .form-element-hidden-on-focus {
-            transition: all 0.2s ease-in-out;
-        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<!-- MODIFICATION: Adjusted body classes for better mobile layout handling -->
+<body class="bg-gray-100 flex justify-center min-h-screen p-4 sm:p-0 sm:items-center">
 
     <!-- Login Form Container (Initially Hidden) -->
     <div id="appContainer" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-6 hidden">
-        <div id="formHeader" class="text-center form-element-hidden-on-focus">
+        <!-- MODIFICATION: Removed unnecessary helper class -->
+        <div id="formHeader" class="text-center">
             <h1 class="text-2xl font-bold text-gray-800">ទម្រង់ចូលគណនី</h1>
             <p class="text-gray-500 mt-2">សូមជ្រើសរើសព័ត៌មានរបស់អ្នក</p>
         </div>
@@ -119,29 +117,32 @@
         <!-- Form Content -->
         <form id="accountForm" class="space-y-6">
             <!-- Class Input -->
-            <div id="classInputContainer" class="form-element-hidden-on-focus">
+            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <div id="classInputContainer">
                 <label for="classInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលថ្នាក់រៀន</label>
                 <input list="classList" id="classInput" name="classInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
                 <datalist id="classList"></datalist>
             </div>
 
             <!-- ID Input -->
-            <div id="idInputContainer" class="form-element-hidden-on-focus">
+            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <div id="idInputContainer">
                 <label for="idInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលអត្តលេខ</label>
                 <input list="idList" id="idInput" name="idInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off" disabled>
                 <datalist id="idList"></datalist>
             </div>
 
             <!-- Name Display -->
-            <div id="nameDisplayContainer" class="bg-gray-50 p-4 rounded-md text-center form-element-hidden-on-focus">
+            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <div id="nameDisplayContainer" class="bg-gray-50 p-4 rounded-md text-center">
                 <label class="text-sm font-medium text-gray-500">ឈ្មោះសិស្ស</label>
                 <p id="nameDisplay" class="text-xl font-bold text-indigo-600 mt-1">-</p>
             </div>
         </form>
          <div id="errorContainer" class="text-center hidden">
-            <p id="errorMessage" class="text-red-500"></p>
-            <button id="retryButton" class="mt-4 w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">ព្យាយាមម្ដងទៀត</button>
-        </div>
+             <p id="errorMessage" class="text-red-500"></p>
+             <button id="retryButton" class="mt-4 w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">ព្យាយាមម្ដងទៀត</button>
+         </div>
     </div>
     
     <!-- Loading Indicator (Visible at start) -->
@@ -187,7 +188,6 @@
             const SHEET_NAME = 'DIList';
             const RANGE = 'E9:AA';
             const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${RANGE}`;
-            // --- FIX: Updated MODEL_URL to a more reliable NPM-based CDN link ---
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
             // --- DOM Elements ---
@@ -211,12 +211,6 @@
             const cameraStatus = document.getElementById('cameraStatus');
             const closeModalButton = document.getElementById('closeModalButton');
             
-            // --- Mobile UI Elements ---
-            const formHeader = document.getElementById('formHeader');
-            const classInputContainer = document.getElementById('classInputContainer');
-            const idInputContainer = document.getElementById('idInputContainer');
-            const nameDisplayContainer = document.getElementById('nameDisplayContainer');
-
             // --- State Management ---
             let studentData = [];
             let currentStudent = null;
@@ -456,7 +450,7 @@
                         cameraStatus.textContent = `កំពុងផ្ទៀងផ្ទាត់... (${confidence})`;
                         
                         if (bestMatch.label !== 'unknown' && bestMatch.distance < 0.5) { 
-                           verificationSuccess();
+                            verificationSuccess();
                         }
                     } else {
                         cameraStatus.textContent = 'រកមិនឃើញមុខ';
@@ -485,25 +479,6 @@
                 }
             }
             
-            // --- Mobile Keyboard UI Adjustment ---
-            function handleInputFocus(focusedElement) {
-                setTimeout(() => {
-                    focusedElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-
-                [formHeader, classInputContainer, idInputContainer, nameDisplayContainer].forEach(el => {
-                    if (el !== focusedElement) {
-                        el.classList.add('hidden');
-                    }
-                });
-            }
-
-            function handleInputBlur() {
-                [formHeader, classInputContainer, idInputContainer, nameDisplayContainer].forEach(el => {
-                    el.classList.remove('hidden');
-                });
-            }
-
             // --- Event Listeners ---
             classInput.addEventListener('change', handleClassChange);
             idInput.addEventListener('change', handleIdChange);
@@ -511,12 +486,6 @@
             logoutButton.addEventListener('click', logout);
             retryButton.addEventListener('click', handleRetry);
             
-            // Add focus and blur listeners for mobile UI
-            classInput.addEventListener('focus', () => handleInputFocus(classInputContainer));
-            classInput.addEventListener('blur', handleInputBlur);
-            idInput.addEventListener('focus', () => handleInputFocus(idInputContainer));
-            idInput.addEventListener('blur', handleInputBlur);
-
             // --- Initial Load ---
             checkForSavedSession();
         });
@@ -524,5 +493,3 @@
 
 </body>
 </html>
-
-
