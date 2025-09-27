@@ -215,7 +215,6 @@
             let studentData = [];
             let currentStudent = null;
             let faceMatcher = null;
-            let videoInterval = null;
             let areModelsLoaded = false;
             let isVerifying = false; 
 
@@ -270,9 +269,10 @@
                 if (areModelsLoaded) return;
                 console.log('Loading face recognition models...');
                 try {
+                    // MODIFICATION: Swapped to lighter models for performance
                     await Promise.all([
-                        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
                         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                     ]);
                     console.log('Models loaded successfully.');
@@ -380,10 +380,7 @@
 
             // --- Face Verification Logic ---
             function stopCameraStream() {
-                if (videoInterval) {
-                    clearInterval(videoInterval);
-                    videoInterval = null;
-                }
+                // MODIFICATION: No longer need to clear an interval
                 if (video.srcObject) {
                     video.srcObject.getTracks().forEach(track => track.stop());
                     video.srcObject = null;
@@ -399,12 +396,14 @@
                 cameraStatus.textContent = 'កំពុងរៀបចំ...';
                 
                 try {
-                    const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+                    // MODIFICATION: Using TinyFaceDetector options
+                    const detectionOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
                     
                     cameraStatus.textContent = 'កំពុងដំណើរការរូបថតយោង...';
                     const referenceImage = await faceapi.fetchImage(currentStudent.imageUrl);
                     const referenceDetection = await faceapi.detectSingleFace(referenceImage, detectionOptions)
-                        .withFaceLandmarks().withFaceDescriptor();
+                        .withFaceLandmarks(true) // Use tiny landmark model
+                        .withFaceDescriptor();
                     
                     if (!referenceDetection) throw new Error("រកមិនឃើញមុខនៅក្នុងរូបថតយោងទេ។");
                     
@@ -432,19 +431,23 @@
                 }
             }
 
-            function onVideoPlay() {
+            // MODIFICATION: Replaced setInterval with a more efficient requestAnimationFrame loop
+            async function onVideoPlay() {
                 const displaySize = { width: video.videoWidth, height: video.videoHeight };
                 faceapi.matchDimensions(overlay, displaySize);
-                const detectionOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.8 });
+                const detectionOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
 
-                videoInterval = setInterval(async () => {
-                    if (!faceMatcher || !isVerifying) return;
+                async function detectFace() {
+                    if (!isVerifying) return; // Stop the loop if verification is cancelled
+
                     const detections = await faceapi.detectAllFaces(video, detectionOptions)
-                        .withFaceLandmarks().withFaceDescriptors();
-                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+                        .withFaceLandmarks(true)
+                        .withFaceDescriptors();
                     
-                    if (resizedDetections.length > 0) {
+                    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+
+                    if (detections.length > 0) {
+                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
                         const bestMatch = faceMatcher.findBestMatch(resizedDetections[0].descriptor);
                         const confidence = (1 - bestMatch.distance).toFixed(2);
                         cameraStatus.textContent = `កំពុងផ្ទៀងផ្ទាត់... (${confidence})`;
@@ -455,10 +458,14 @@
                     } else {
                         cameraStatus.textContent = 'រកមិនឃើញមុខ';
                     }
-                }, 300);
+                    
+                    requestAnimationFrame(detectFace); // Call the next frame
+                }
+                detectFace();
             }
 
             function verificationSuccess() {
+                isVerifying = false; // Stop detection loop
                 cameraStatus.textContent = 'ជោគជ័យ!';
                 // Save session to localStorage
                 localStorage.setItem('loggedInStudent', JSON.stringify(currentStudent));
@@ -468,9 +475,9 @@
             }
 
             function closeVerificationModal(resetInputs = true) {
+                isVerifying = false; // Ensure detection loop stops
                 stopCameraStream();
                 cameraModal.classList.add('hidden');
-                isVerifying = false; 
                 
                 if (resetInputs && idInput.value) {
                     idInput.value = '';
@@ -493,3 +500,4 @@
 
 </body>
 </html>
+
