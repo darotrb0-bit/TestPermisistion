@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>កម្មវិធីបង្កើតគណនី</title>
-    <!-- Tailwind CSS for styling -->
+    <title>កម្មវិធីសម្គាល់អត្តសញ្ញាណ</title>
+    <!-- Tailwind CSS សម្រាប់រចនាទំព័រ -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- face-api.js for face recognition -->
+    <!-- face-api.js សម្រាប់វិភាគមុខ -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    <!-- Google Fonts for a Khmer font -->
+    <!-- Google Fonts សម្រាប់ហ្វុងខ្មែរ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,6 +16,7 @@
         body {
             font-family: 'Kantumruy Pro', sans-serif;
         }
+        /* រចនាប័ទ្មសម្រាប់ Loader ដែលបង្ហាញពេលកំពុងទាញទិន្នន័យ */
         .loader {
             border: 4px solid #f3f3f3;
             border-radius: 50%;
@@ -28,10 +29,11 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* រចនាប័ទ្មសម្រាប់ Modal បង្ហាញកាមេរ៉ា */
         #cameraModal {
             background-color: rgba(0, 0, 0, 0.6);
         }
-        /* Circular video preview styles */
+        /* រចនាប័ទ្មសម្រាប់វីដេអូបង្ហាញក្នុងរង្វង់មូល */
         #videoContainer {
             width: 100%;
             height: 100%;
@@ -39,7 +41,7 @@
             overflow: hidden;
             position: relative;
             background-color: #000;
-            transform: scaleX(-1); /* Mirror the video feed */
+            transform: scaleX(-1); /* បង្វិលវីដេអូដូចកញ្ចក់ */
         }
         #video, #overlay {
             position: absolute;
@@ -51,6 +53,7 @@
             height: auto;
             transform: translate(-50%, -50%);
         }
+        /* រចនាប័ទ្មសម្រាប់ Scanner Effect */
         #scannerEffect {
             --scanner-color: #3b82f6;
             position: absolute;
@@ -68,17 +71,15 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* Laser Scanner Styles */
+        /* រចនាប័ទ្មសម្រាប់បន្ទាត់ Laser ដែលរត់ចុះឡើង */
         #laserScanner {
             position: absolute;
-            inset: 0.5rem; /* Matches parent's p-2 padding */
+            inset: 0.5rem;
             border-radius: 50%;
             overflow: hidden;
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: none;
             z-index: 2;
         }
-
         #laserScanner::after {
             content: '';
             position: absolute;
@@ -89,81 +90,81 @@
             box-shadow: 0 0 5px rgba(59, 130, 246, 0.8), 0 0 10px rgba(59, 130, 246, 0.8), 0 0 15px rgba(255, 255, 255, 0.8);
             animation: laser-scan-line 2.5s ease-in-out infinite;
         }
-
         @keyframes laser-scan-line {
-            0% {
-                left: 15%;
-            }
-            50% {
-                left: 85%;
-            }
-            100% {
-                left: 15%;
-            }
+            0% { left: 15%; }
+            50% { left: 85%; }
+            100% { left: 15%; }
         }
     </style>
 </head>
-<!-- MODIFICATION: Adjusted body classes for better mobile layout handling -->
 <body class="bg-gray-100 flex justify-center min-h-screen p-4 sm:p-0 sm:items-center">
 
-    <!-- Login Form Container (Initially Hidden) -->
+    <!-- ទម្រង់ចូល (លាក់ទុកដំបូង) -->
     <div id="appContainer" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-6 hidden">
-        <!-- MODIFICATION: Removed unnecessary helper class -->
         <div id="formHeader" class="text-center">
             <h1 class="text-2xl font-bold text-gray-800">ទម្រង់ចូលគណនី</h1>
             <p class="text-gray-500 mt-2">សូមជ្រើសរើសព័ត៌មានរបស់អ្នក</p>
         </div>
 
-        <!-- Form Content -->
         <form id="accountForm" class="space-y-6">
-            <!-- Class Input -->
-            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <!-- ប្រអប់សម្រាប់ជ្រើសរើសថ្នាក់ -->
             <div id="classInputContainer">
                 <label for="classInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលថ្នាក់រៀន</label>
                 <input list="classList" id="classInput" name="classInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
                 <datalist id="classList"></datalist>
             </div>
 
-            <!-- ID Input -->
-            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <!-- ប្រអប់សម្រាប់ជ្រើសរើសអត្តលេខ -->
             <div id="idInputContainer">
                 <label for="idInput" class="block text-sm font-medium text-gray-700 mb-1">ជ្រើសរើស ឬវាយបញ្ចូលអត្តលេខ</label>
                 <input list="idList" id="idInput" name="idInput" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off" disabled>
                 <datalist id="idList"></datalist>
             </div>
 
-            <!-- Name Display -->
-            <!-- MODIFICATION: Removed unnecessary helper class -->
+            <!-- កន្លែងបង្ហាញឈ្មោះ -->
             <div id="nameDisplayContainer" class="bg-gray-50 p-4 rounded-md text-center">
                 <label class="text-sm font-medium text-gray-500">ឈ្មោះសិស្ស</label>
                 <p id="nameDisplay" class="text-xl font-bold text-indigo-600 mt-1">-</p>
             </div>
         </form>
+         <!-- កន្លែងបង្ហាញ Error -->
          <div id="errorContainer" class="text-center hidden">
              <p id="errorMessage" class="text-red-500"></p>
              <button id="retryButton" class="mt-4 w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">ព្យាយាមម្ដងទៀត</button>
          </div>
     </div>
     
-    <!-- Loading Indicator (Visible at start) -->
+    <!-- Loader (បង្ហាញពេលដំបូង) -->
     <div id="loader" class="flex flex-col items-center justify-center space-y-2">
         <div class="loader"></div>
-        <p class="text-gray-500">កំពុងตรวจสอบ...</p>
+        <p class="text-gray-500">កំពុងរៀបចំ...</p>
     </div>
 
-    <!-- Home Page UI (Initially Hidden) -->
-    <div id="homePage" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-6 text-center hidden">
-        <svg class="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h1 class="text-2xl font-bold text-gray-800">ការចូលជោគជ័យ!</h1>
-        <p class="text-gray-600 text-lg">សូមស្វាគមន៍, <span id="homeName" class="font-bold"></span>!</p>
-        <!-- NEW Logout Button -->
-        <button id="logoutButton" class="mt-4 bg-red-500 text-white font-bold py-2 px-6 rounded-md hover:bg-red-600 transition-colors">ចាកចេញ</button>
+    <!-- NEW: Attendance Page (Replaces HomePage) -->
+    <div id="attendancePage" class="w-full max-w-md bg-white rounded-lg shadow-xl p-8 space-y-4 text-center hidden">
+        <h1 class="text-2xl font-bold text-gray-800">ប្រព័ន្ធកត់ត្រាវត្តមាន</h1>
+        <p class="text-gray-600 text-lg">សូមស្វាគមន៍, <span id="attendanceName" class="font-bold"></span>!</p>
+
+        <!-- Status Display -->
+        <div id="statusContainer" class="bg-gray-100 p-3 rounded-md min-h-[40px] flex items-center justify-center">
+            <p id="statusMessage" class="text-gray-700 font-medium">កំពុងរៀបចំ...</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 gap-4 pt-4">
+            <button id="checkInButton" class="bg-green-500 text-white font-bold py-3 px-4 rounded-md hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                Check In
+            </button>
+            <button id="checkOutButton" class="bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                Check Out
+            </button>
+        </div>
+
+        <button id="logoutButton" class="mt-6 w-full bg-red-500 text-white font-bold py-2 px-6 rounded-md hover:bg-red-600 transition-colors">ចាកចេញ</button>
     </div>
 
 
-    <!-- Camera Verification Modal -->
+    <!-- Modal សម្រាប់ផ្ទៀងផ្ទាត់កាមេរ៉ា -->
     <div id="cameraModal" class="fixed inset-0 w-full h-full flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
             <h2 class="text-xl font-bold mb-4">សូមដាក់មុខនៅចំកណ្តាល</h2>
@@ -183,14 +184,21 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- Configuration ---
-            const SHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
+            // --- ការកំណត់ค่า Configuration ---
+            const SHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc'; // ID របស់ Google Sheet (បញ្ជីឈ្មោះ)
             const SHEET_NAME = 'DIList';
             const RANGE = 'E9:AA';
             const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${RANGE}`;
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+            
+            // --- NEW: ការកំណត់សម្រាប់ Check-in/Check-out ---
+            const LEAVE_SHEET_ID = '18oonwPyyU6I0hHX-vucvoYSqGf_S7wPnQX817CqauPE'; // ID របស់ Sheet (បញ្ជីច្បាប់)
+            const LEAVE_SHEET_NAME = 'Requests';
+            const TARGET_LAT = 11.414476639464848; // រយៈទទឹងគោលដៅ
+            const TARGET_LON = 104.76383687139422; // រយៈបណ្តោយគោលដៅ
+            const MAX_DISTANCE_METERS = 10; // រង្វង់អនុញ្ញាត (ម៉ែត្រ)
 
-            // --- DOM Elements ---
+            // --- ការកំណត់ DOM Elements ---
             const loader = document.getElementById('loader');
             const appContainer = document.getElementById('appContainer');
             const accountForm = document.getElementById('accountForm');
@@ -202,31 +210,35 @@
             const errorContainer = document.getElementById('errorContainer');
             const errorMessage = document.getElementById('errorMessage');
             const retryButton = document.getElementById('retryButton');
-            const homePage = document.getElementById('homePage');
-            const homeName = document.getElementById('homeName');
-            const logoutButton = document.getElementById('logoutButton');
             const cameraModal = document.getElementById('cameraModal');
             const video = document.getElementById('video');
             const overlay = document.getElementById('overlay');
             const cameraStatus = document.getElementById('cameraStatus');
             const closeModalButton = document.getElementById('closeModalButton');
+             // --- NEW: DOM Elements for Attendance Page ---
+            const attendancePage = document.getElementById('attendancePage');
+            const attendanceName = document.getElementById('attendanceName');
+            const statusMessage = document.getElementById('statusMessage');
+            const checkInButton = document.getElementById('checkInButton');
+            const checkOutButton = document.getElementById('checkOutButton');
+            const logoutButton = document.getElementById('logoutButton');
+
             
-            // --- State Management ---
+            // --- ការគ្រប់គ្រង State ---
             let studentData = [];
             let currentStudent = null;
             let faceMatcher = null;
             let areModelsLoaded = false;
             let isVerifying = false; 
 
-            // --- Session Management ---
+            // --- ការគ្រប់គ្រង Session ---
             function checkForSavedSession() {
                 const savedStudentJSON = localStorage.getItem('loggedInStudent');
                 if (savedStudentJSON) {
                     try {
                         const student = JSON.parse(savedStudentJSON);
-                        showHomePage(student);
+                        showAttendancePage(student);
                     } catch (e) {
-                        console.error("Failed to parse saved student data", e);
                         localStorage.removeItem('loggedInStudent');
                         initializeLoginForm();
                     }
@@ -235,26 +247,41 @@
                 }
             }
             
-            function initializeLoginForm() {
+            async function initializeLoginForm() {
                 loader.classList.remove('hidden');
                 loader.querySelector('p').textContent = 'កំពុងទាញទិន្នន័យ...';
-                Promise.all([loadModels(), fetchData()]);
+                await Promise.all([loadModels(), fetchData()]);
             }
 
-            function showHomePage(student) {
+            // --- NEW: Function to show Attendance Page ---
+            async function showAttendancePage(student) {
                 loader.classList.add('hidden');
                 appContainer.classList.add('hidden');
-                homeName.textContent = student.name;
-                homePage.classList.remove('hidden');
+                errorContainer.classList.add('hidden');
+
+                attendanceName.textContent = student.name;
+                attendancePage.classList.remove('hidden');
+
+                checkInButton.disabled = true;
+                checkOutButton.disabled = true;
+                statusMessage.textContent = 'កំពុងពិនិត្យមើលការសុំច្បាប់...';
+
+                try {
+                    const leaveStatus = await fetchLeaveData(student.id);
+                    statusMessage.textContent = 'កំពុងពិនិត្យទីតាំង...';
+                    getCurrentLocation(leaveStatus);
+                } catch (error) {
+                    statusMessage.textContent = 'មិនអាចពិនិត្យមើលការសុំច្បាប់បានទេ។';
+                    console.error("Leave fetch error:", error);
+                }
             }
             
             function logout() {
                 localStorage.removeItem('loggedInStudent');
-                homePage.classList.add('hidden');
-                errorContainer.classList.add('hidden');
+                attendancePage.classList.add('hidden');
                 accountForm.classList.remove('hidden');
                 appContainer.classList.remove('hidden');
-                // Reset form state
+                // កំណត់ទម្រង់ឡើងវិញ
                 classInput.value = '';
                 idInput.value = '';
                 idInput.disabled = true;
@@ -264,21 +291,17 @@
             }
 
 
-            // --- Main Functions ---
+            // --- មុខងារចម្បង ---
             async function loadModels() {
                 if (areModelsLoaded) return;
-                console.log('Loading face recognition models...');
                 try {
-                    // MODIFICATION: Swapped to lighter models for performance
                     await Promise.all([
                         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                         faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
                         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                     ]);
-                    console.log('Models loaded successfully.');
                     areModelsLoaded = true;
                 } catch (error) {
-                    console.error("Error loading models: ", error);
                     showError('បរាជ័យក្នុងការទាញយកម៉ូដែលវិភាគមុខ។');
                 }
             }
@@ -313,22 +336,18 @@
 
                     populateClasses();
                     loader.classList.add('hidden');
-                    accountForm.classList.remove('hidden');
                     appContainer.classList.remove('hidden');
                 } catch (error) {
-                    console.error('Error fetching data:', error);
                     showError('បរាជ័យក្នុងការទាញទិន្នន័យពី Google Sheets។');
                 }
             }
             
             function handleRetry() {
                 errorContainer.classList.add('hidden');
-                loader.classList.remove('hidden');
-                loader.querySelector('p').textContent = 'កំពុងព្យាយាមម្ដងទៀត...';
-                fetchData();
+                accountForm.classList.remove('hidden');
+                initializeLoginForm();
             }
 
-            // --- UI Update Functions ---
             function populateClasses() {
                 const uniqueClasses = [...new Set(studentData.map(item => item.class))];
                 classDatalist.innerHTML = '';
@@ -372,15 +391,15 @@
 
             function showError(message) {
                 loader.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                accountForm.classList.add('hidden');
-                errorContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                attendancePage.classList.add('hidden');
                 errorMessage.textContent = message;
+                errorContainer.classList.remove('hidden');
             }
 
-            // --- Face Verification Logic ---
+
+            // --- ឡូហ្ស៊ិកផ្ទៀងផ្ទាត់មុខ ---
             function stopCameraStream() {
-                // MODIFICATION: No longer need to clear an interval
                 if (video.srcObject) {
                     video.srcObject.getTracks().forEach(track => track.stop());
                     video.srcObject = null;
@@ -396,13 +415,12 @@
                 cameraStatus.textContent = 'កំពុងរៀបចំ...';
                 
                 try {
-                    // MODIFICATION: Using TinyFaceDetector options
                     const detectionOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
                     
                     cameraStatus.textContent = 'កំពុងដំណើរការរូបថតយោង...';
                     const referenceImage = await faceapi.fetchImage(currentStudent.imageUrl);
                     const referenceDetection = await faceapi.detectSingleFace(referenceImage, detectionOptions)
-                        .withFaceLandmarks(true) // Use tiny landmark model
+                        .withFaceLandmarks(true)
                         .withFaceDescriptor();
                     
                     if (!referenceDetection) throw new Error("រកមិនឃើញមុខនៅក្នុងរូបថតយោងទេ។");
@@ -414,68 +432,55 @@
                     video.addEventListener('play', onVideoPlay);
 
                 } catch (error) {
-                    console.error("Verification Error:", error);
                     let userMessage = 'មានបញ្ហាក្នុងការបើកកាមេរ៉ា។';
-                    if (error.name === 'NotReadableError' || (error.message && error.message.includes('Device in use'))) {
-                        userMessage = 'កាមេរ៉ាកំពុងប្រើដោយកម្មវិធីផ្សេង។ សូមបិទកម្មវិធីនោះសិន។';
-                    } else if (error.name === 'NotFoundError') {
-                        userMessage = 'រកមិនឃើញកាមេរ៉ាទេ។ សូមប្រាកដថាបានភ្ជាប់រួចរាល់។';
-                    } else if (error.name === 'NotAllowedError') {
-                        userMessage = 'មិនមានការអនុញ្ញាតឱ្យប្រើកាមេរ៉ាទេ។ សូមពិនិត្យ Permission។';
+                    if (error.name === 'NotAllowedError') {
+                        userMessage = 'មិនមានការអនុញ្ញាតឱ្យប្រើកាមេរ៉ាទេ។';
                     } else if (error.message.includes("រកមិនឃើញមុខ")) {
-                        userMessage = "បញ្ហារូបថត៖ រកមិនឃើញមុខក្នុងរូបថតដើមរបស់សិស្ស។";
+                        userMessage = "បញ្ហារូបថត៖ រកមិនឃើញមុខក្នុងរូបថតដើម។";
                     }
-
                     cameraStatus.textContent = userMessage;
                     setTimeout(() => closeVerificationModal(true), 4000);
                 }
             }
 
-            // MODIFICATION: Replaced setInterval with a more efficient requestAnimationFrame loop
             async function onVideoPlay() {
+                if (!isVerifying) return;
                 const displaySize = { width: video.videoWidth, height: video.videoHeight };
                 faceapi.matchDimensions(overlay, displaySize);
                 const detectionOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224 });
 
-                async function detectFace() {
-                    if (!isVerifying) return; // Stop the loop if verification is cancelled
-
-                    const detections = await faceapi.detectAllFaces(video, detectionOptions)
-                        .withFaceLandmarks(true)
-                        .withFaceDescriptors();
+                const detections = await faceapi.detectAllFaces(video, detectionOptions)
+                    .withFaceLandmarks(true)
+                    .withFaceDescriptors();
+                
+                if (detections.length > 0) {
+                    const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
+                    const confidence = ((1 - bestMatch.distance) * 100).toFixed(0);
+                    cameraStatus.textContent = `កំពុងផ្ទៀងផ្ទាត់... (${confidence}%)`;
                     
-                    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
-
-                    if (detections.length > 0) {
-                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                        const bestMatch = faceMatcher.findBestMatch(resizedDetections[0].descriptor);
-                        const confidence = (1 - bestMatch.distance).toFixed(2);
-                        cameraStatus.textContent = `កំពុងផ្ទៀងផ្ទាត់... (${confidence})`;
-                        
-                        if (bestMatch.label !== 'unknown' && bestMatch.distance < 0.5) { 
-                            verificationSuccess();
-                        }
-                    } else {
-                        cameraStatus.textContent = 'រកមិនឃើញមុខ';
+                    if (bestMatch.label !== 'unknown' && bestMatch.distance < 0.5) { 
+                        verificationSuccess();
+                        return;
                     }
-                    
-                    requestAnimationFrame(detectFace); // Call the next frame
+                } else {
+                    cameraStatus.textContent = 'រកមិនឃើញមុខ';
                 }
-                detectFace();
+                requestAnimationFrame(onVideoPlay);
             }
 
             function verificationSuccess() {
-                isVerifying = false; // Stop detection loop
+                isVerifying = false;
                 cameraStatus.textContent = 'ជោគជ័យ!';
-                // Save session to localStorage
                 localStorage.setItem('loggedInStudent', JSON.stringify(currentStudent));
                 
-                showHomePage(currentStudent);
-                setTimeout(() => closeVerificationModal(false), 1000);
+                setTimeout(() => {
+                  closeVerificationModal(false);
+                  showAttendancePage(currentStudent);
+                }, 1000);
             }
 
             function closeVerificationModal(resetInputs = true) {
-                isVerifying = false; // Ensure detection loop stops
+                isVerifying = false;
                 stopCameraStream();
                 cameraModal.classList.add('hidden');
                 
@@ -485,15 +490,110 @@
                     currentStudent = null;
                 }
             }
+             // --- NEW: Functions for Attendance ---
+
+            async function fetchLeaveData(studentId) {
+                const LEAVE_URL = `https://docs.google.com/spreadsheets/d/${LEAVE_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${LEAVE_SHEET_NAME}`;
+                const response = await fetch(LEAVE_URL);
+                if (!response.ok) throw new Error('Network response was not ok for leave data.');
+                
+                const text = await response.text();
+                const jsonString = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+                const data = JSON.parse(jsonString);
+
+                if (data.status === 'error') throw new Error('Google Sheet API error for leave data.');
+
+                const rows = data.table.rows;
+                // ជួរឈរ C គឺ index 2 (ID), ជួរឈរ G គឺ index 6 (Leave Status)
+                for (const row of rows) {
+                    if (row.c && row.c[2]?.v == studentId) {
+                        return row.c[6]?.v || null;
+                    }
+                }
+                return null; // រកមិនឃើញកំណត់ត្រាច្បាប់
+            }
+
+            function getCurrentLocation(leaveStatus) {
+                if (!navigator.geolocation) {
+                    statusMessage.textContent = 'កម្មវិធីរុករកមិនគាំទ្រទីតាំងភូមិសាស្ត្រទេ។';
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const distance = calculateDistance(TARGET_LAT, TARGET_LON, latitude, longitude);
+
+                        let finalStatusMessage = '';
+                        let canCheckIn = leaveStatus !== 'មួយព្រឹក' && leaveStatus !== 'មួយថ្ងៃ';
+                        let canCheckOut = leaveStatus !== 'មួយរសៀល' && leaveStatus !== 'មួយថ្ងៃ';
+
+                        if (distance <= MAX_DISTANCE_METERS) {
+                            finalStatusMessage = `អ្នកស្ថិតនៅក្នុងតំបន់ (${distance.toFixed(0)}m)។`;
+                            checkInButton.disabled = !canCheckIn;
+                            checkOutButton.disabled = !canCheckOut;
+                            
+                            // បង្ហាញសារបន្ថែមប្រសិនបើមានច្បាប់
+                             if(!canCheckIn && canCheckOut) finalStatusMessage += " អ្នកបានសុំច្បាប់ពេលព្រឹក។"
+                             if(!canCheckOut && canCheckIn) finalStatusMessage += " អ្នកបានសុំច្បាប់ពេលរសៀល។"
+
+                        } else {
+                            finalStatusMessage = `អ្នកនៅឆ្ងាយពីទីតាំង (${distance.toFixed(0)}m)។`;
+                            checkInButton.disabled = true;
+                            checkOutButton.disabled = true;
+                        }
+
+                        if (!canCheckIn && !canCheckOut) {
+                             finalStatusMessage = "អ្នកបានសុំច្បាប់មួយថ្ងៃ។";
+                        }
+                         
+                        statusMessage.textContent = finalStatusMessage;
+                    },
+                    (error) => {
+                        let msg = 'មិនអាចទទួលបានទីតាំងបច្ចុប្បន្នទេ។';
+                        if (error.code === 1) msg = 'សូមអនុញ្ញាតឱ្យចូលប្រើទីតាំងរបស់អ្នក។';
+                        statusMessage.textContent = msg;
+                    }
+                );
+            }
+
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371e3; // metres
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+             function handleAttendance(type) {
+                statusMessage.textContent = `កំពុងដំណើរការ ${type}...`;
+                // នៅក្នុងកម្មវិធីពិតប្រាកដ អ្នកនឹង Fetch POST request ទៅ Google Apps Script URL
+                console.log(`ACTION: ${type} for student ${currentStudent.id} at ${new Date()}`);
+
+                setTimeout(() => {
+                    statusMessage.textContent = `${type} បានជោគជ័យ!`;
+                    if (type === 'Check In') {
+                        checkInButton.disabled = true;
+                    } else { 
+                        checkOutButton.disabled = true;
+                    }
+                }, 1500);
+            }
             
             // --- Event Listeners ---
             classInput.addEventListener('change', handleClassChange);
             idInput.addEventListener('change', handleIdChange);
             closeModalButton.addEventListener('click', () => closeVerificationModal(true));
-            logoutButton.addEventListener('click', logout);
             retryButton.addEventListener('click', handleRetry);
+             // --- NEW: Event Listeners for Attendance ---
+            logoutButton.addEventListener('click', logout);
+            checkInButton.addEventListener('click', () => handleAttendance('Check In'));
+            checkOutButton.addEventListener('click', () => handleAttendance('Check Out'));
             
-            // --- Initial Load ---
+            // --- ចាប់ផ្តើមដំណើរការ ---
             checkForSavedSession();
         });
     </script>
