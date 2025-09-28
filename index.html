@@ -187,7 +187,7 @@
             // --- ការកំណត់ค่า Configuration ---
             const SHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc'; // ID របស់ Google Sheet (បញ្ជីឈ្មោះ)
             const SHEET_NAME = 'DIList';
-            const RANGE = 'E9:AA';
+            const RANGE = 'E9:AI'; // បានពង្រីក Range ដើម្បីរួមបញ្ចូលកាលវិភាគ
             const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${RANGE}`;
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
             
@@ -258,22 +258,12 @@
                 loader.classList.add('hidden');
                 appContainer.classList.add('hidden');
                 errorContainer.classList.add('hidden');
+                currentStudent = student; // រក្សាទុកข้อมูลសិស្សបច្ចុប្បន្ន
 
                 attendanceName.textContent = student.name;
                 attendancePage.classList.remove('hidden');
 
-                checkInButton.disabled = true;
-                checkOutButton.disabled = true;
-                statusMessage.textContent = 'កំពុងពិនិត្យមើលការសុំច្បាប់...';
-
-                try {
-                    const leaveStatus = await fetchLeaveData(student.id);
-                    statusMessage.textContent = 'កំពុងពិនិត្យទីតាំង...';
-                    getCurrentLocation(leaveStatus);
-                } catch (error) {
-                    statusMessage.textContent = 'មិនអាចពិនិត្យមើលការសុំច្បាប់បានទេ។';
-                    console.error("Leave fetch error:", error);
-                }
+                await updateButtonStates(); // ហៅមុខងារថ្មីដើម្បីពិនិត្យស្ថានភាព
             }
             
             function logout() {
@@ -329,7 +319,17 @@
                         }
                         
                         if (id && name && className && imageUrl) {
-                            return { id: String(id), name: String(name), class: String(className), imageUrl };
+                             // NEW: ទាញយកទិន្នន័យកាលវិភាគ
+                            const schedule = {
+                                mon: row.c[24]?.v, // AC = 24 (28-4)
+                                tue: row.c[25]?.v, // AD = 25 (29-4)
+                                wed: row.c[26]?.v, // AE = 26 (30-4)
+                                thu: row.c[27]?.v, // AF = 27 (31-4)
+                                fri: row.c[28]?.v, // AG = 28 (32-4)
+                                sat: row.c[29]?.v, // AH = 29 (33-4)
+                                sun: row.c[30]?.v, // AI = 30 (34-4)
+                            };
+                            return { id: String(id), name: String(name), class: String(className), imageUrl, schedule };
                         }
                         return null;
                     }).filter(Boolean);
@@ -512,8 +512,120 @@
                 }
                 return null; // រកមិនឃើញកំណត់ត្រាច្បាប់
             }
+            
+            // NEW: មុខងារថ្មីសម្រាប់គ្រប់គ្រងស្ថានភាពប៊ូតុង
+            async function updateButtonStates() {
+                checkInButton.disabled = true;
+                checkOutButton.disabled = true;
+                statusMessage.textContent = 'កំពុងពិនិត្យកាលវិភាគ និងការសុំច្បាប់...';
 
-            function getCurrentLocation(leaveStatus) {
+                try {
+                    const leaveStatus = await fetchLeaveData(currentStudent.id);
+                    const schedule = currentStudent.schedule;
+
+                    const now = new Date();
+                    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
+                    const dayMapping = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                    const todaySchedule = schedule[dayMapping[dayOfWeek]];
+                    
+                    let status = 'សូមស្វាគមន៍!';
+                    let canCheckIn = false;
+                    let canCheckOut = false;
+
+                    // 1. ពិនិត្យការសុំច្បាប់
+                    if (leaveStatus === 'មួយថ្ងៃ') {
+                        status = 'អ្នកបានសុំច្បាប់មួយថ្ងៃ។';
+                    } else {
+                        const checkInAllowedByLeave = leaveStatus !== 'មួយព្រឹក';
+                        const checkOutAllowedByLeave = leaveStatus !== 'មួយរសៀល';
+                        
+                        // 2. ពិនិត្យកាលវិភាគ និងម៉ោង
+                        const timeWindows = getTimeWindowsForSchedule(todaySchedule, dayOfWeek);
+                        if (!timeWindows) {
+                            status = 'ថ្ងៃនេះមិនមានកាលវិភាគទេ។';
+                        } else {
+                            const isCheckInTime = isTimeInWindow(now, timeWindows.checkInStart, timeWindows.checkInEnd);
+                            const isCheckOutTime = isTimeInWindow(now, timeWindows.checkOutStart, timeWindows.checkOutEnd);
+
+                            if (checkInAllowedByLeave && isCheckInTime) canCheckIn = true;
+                            if (checkOutAllowedByLeave && isCheckOutTime) canCheckOut = true;
+
+                            // បង្កើតសារបង្ហាញស្ថានភាព
+                            if (canCheckIn || canCheckOut) {
+                                status = 'អ្នកអាច Check In ឬ Check Out បាន។';
+                            } else if (!isCheckInTime && !isCheckOutTime) {
+                                status = 'ក្រៅម៉ោងធ្វើការ។';
+                            } else {
+                                if (!checkInAllowedByLeave) status = 'អ្នកបានសុំច្បាប់ពេលព្រឹក។';
+                                else if (!checkOutAllowedByLeave) status = 'អ្នកបានសុំច្បាប់ពេលរសៀល។';
+                                else status = 'សូមពិនិត្យមើលម៉ោងធ្វើការរបស់អ្នក។';
+                            }
+                        }
+                    }
+                    
+                    checkInButton.disabled = !canCheckIn;
+                    checkOutButton.disabled = !canCheckOut;
+                    statusMessage.textContent = status;
+
+                } catch (error) {
+                    statusMessage.textContent = 'មានបញ្ហាក្នុងការពិនិត្យស្ថានភាព។';
+                    console.error("Error updating button states:", error);
+                }
+            }
+
+            // NEW: មុខងារសម្រាប់កំណត់ម៉ោង Check-in/out តាមកាលវិភាគ
+            function getTimeWindowsForSchedule(scheduleType, dayOfWeek) {
+                const isFriday = dayOfWeek === 5;
+                switch(scheduleType) {
+                    case 'ពេញម៉ោង':
+                        return {
+                            checkInStart: '7:00AM', checkInEnd: '10:04AM',
+                            checkOutStart: isFriday ? '3:15PM' : '5:30PM', checkOutEnd: '8:04PM'
+                        };
+                    case 'មួយព្រឹក':
+                        return {
+                            checkInStart: '7:00AM', checkInEnd: '10:04AM',
+                            checkOutStart: '11:30AM', checkOutEnd: '1:04PM'
+                        };
+                    case 'មួយរសៀល':
+                        return {
+                            checkInStart: '11:00AM', checkInEnd: '1:44PM',
+                            checkOutStart: isFriday ? '3:15PM' : '5:30PM', checkOutEnd: '8:04PM'
+                        };
+                    case 'ពេលយប់':
+                        return {
+                            checkInStart: '5:45PM', checkInEnd: '6:44PM',
+                            checkOutStart: '8:55PM', checkOutEnd: '10:04PM'
+                        };
+                    default:
+                        return null;
+                }
+            }
+
+            // NEW: មុខងារជំនួយសម្រាប់ពិនិត្យមើលថាតើស្ថិតនៅក្នុងចន្លោះម៉ោងដែរឬទេ
+            function isTimeInWindow(now, startStr, endStr) {
+                const parseTime = (timeStr) => {
+                    const date = new Date(now);
+                    const [time, modifier] = timeStr.match(/(\d+:\d+)(AM|PM)/i).slice(1);
+                    let [hours, minutes] = time.split(':').map(Number);
+                    if (modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+                    date.setHours(hours, minutes, 0, 0);
+                    return date;
+                };
+                const startTime = parseTime(startStr);
+                const endTime = parseTime(endStr);
+                return now >= startTime && now <= endTime;
+            }
+
+
+            // NEW: មុខងារដែលត្រូវបានហៅនៅពេលចុចប៊ូតុង Check-in/out
+            function handleAttendanceClick(type) {
+                statusMessage.textContent = 'កំពុងស្នើសុំទីតាំង...';
+                checkLocationAndProceed(type);
+            }
+
+            function checkLocationAndProceed(type) {
                 if (!navigator.geolocation) {
                     statusMessage.textContent = 'កម្មវិធីរុករកមិនគាំទ្រទីតាំងភូមិសាស្ត្រទេ។';
                     return;
@@ -524,30 +636,11 @@
                         const { latitude, longitude } = position.coords;
                         const distance = calculateDistance(TARGET_LAT, TARGET_LON, latitude, longitude);
 
-                        let finalStatusMessage = '';
-                        let canCheckIn = leaveStatus !== 'មួយព្រឹក' && leaveStatus !== 'មួយថ្ងៃ';
-                        let canCheckOut = leaveStatus !== 'មួយរសៀល' && leaveStatus !== 'មួយថ្ងៃ';
-
                         if (distance <= MAX_DISTANCE_METERS) {
-                            finalStatusMessage = `អ្នកស្ថិតនៅក្នុងតំបន់ (${distance.toFixed(0)}m)។`;
-                            checkInButton.disabled = !canCheckIn;
-                            checkOutButton.disabled = !canCheckOut;
-                            
-                            // បង្ហាញសារបន្ថែមប្រសិនបើមានច្បាប់
-                             if(!canCheckIn && canCheckOut) finalStatusMessage += " អ្នកបានសុំច្បាប់ពេលព្រឹក។"
-                             if(!canCheckOut && canCheckIn) finalStatusMessage += " អ្នកបានសុំច្បាប់ពេលរសៀល។"
-
+                            recordAttendance(type);
                         } else {
-                            finalStatusMessage = `អ្នកនៅឆ្ងាយពីទីតាំង (${distance.toFixed(0)}m)។`;
-                            checkInButton.disabled = true;
-                            checkOutButton.disabled = true;
+                            statusMessage.textContent = `អ្នកនៅឆ្ងាយពីទីតាំង (${distance.toFixed(0)}m)។`;
                         }
-
-                        if (!canCheckIn && !canCheckOut) {
-                             finalStatusMessage = "អ្នកបានសុំច្បាប់មួយថ្ងៃ។";
-                        }
-                         
-                        statusMessage.textContent = finalStatusMessage;
                     },
                     (error) => {
                         let msg = 'មិនអាចទទួលបានទីតាំងបច្ចុប្បន្នទេ។';
@@ -568,7 +661,7 @@
                 return R * c;
             }
 
-             function handleAttendance(type) {
+            function recordAttendance(type) {
                 statusMessage.textContent = `កំពុងដំណើរការ ${type}...`;
                 // នៅក្នុងកម្មវិធីពិតប្រាកដ អ្នកនឹង Fetch POST request ទៅ Google Apps Script URL
                 console.log(`ACTION: ${type} for student ${currentStudent.id} at ${new Date()}`);
@@ -590,8 +683,8 @@
             retryButton.addEventListener('click', handleRetry);
              // --- NEW: Event Listeners for Attendance ---
             logoutButton.addEventListener('click', logout);
-            checkInButton.addEventListener('click', () => handleAttendance('Check In'));
-            checkOutButton.addEventListener('click', () => handleAttendance('Check Out'));
+            checkInButton.addEventListener('click', () => handleAttendanceClick('Check In'));
+            checkOutButton.addEventListener('click', () => handleAttendanceClick('Check Out'));
             
             // --- ចាប់ផ្តើមដំណើរការ ---
             checkForSavedSession();
