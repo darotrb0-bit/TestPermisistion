@@ -194,6 +194,8 @@
             // --- NEW: ការកំណត់សម្រាប់ Check-in/Check-out ---
             const LEAVE_SHEET_ID = '18oonwPyyU6I0hHX-vucvoYSqGf_S7wPnQX817CqauPE'; // ID របស់ Sheet (បញ្ជីច្បាប់)
             const LEAVE_SHEET_NAME = 'Requests';
+            const CRB_LEAVE_SHEET_ID = '1xpy1CDg3LTD1iYPXKbfJrjldR5vVW3AhoNSwTzb8wDY'; // ID របស់ Sheet (បញ្ជីច្បាប់ CRB)
+            const CRB_LEAVE_SHEET_NAME = 'CRBRequests';
             const TARGET_LAT = 11.414476639464848; // រយៈទទឹងគោលដៅ
             const TARGET_LON = 104.76383687139422; // រយៈបណ្តោយគោលដៅ
             const MAX_DISTANCE_METERS = 10; // រង្វង់អនុញ្ញាត (ម៉ែត្រ)
@@ -512,25 +514,30 @@
             }
              // --- NEW: Functions for Attendance ---
 
-            async function fetchLeaveData(studentId) {
-                const LEAVE_URL = `https://docs.google.com/spreadsheets/d/${LEAVE_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${LEAVE_SHEET_NAME}`;
-                const response = await fetch(LEAVE_URL);
-                if (!response.ok) throw new Error('Network response was not ok for leave data.');
-                
-                const text = await response.text();
-                const jsonString = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
-                const data = JSON.parse(jsonString);
+            async function fetchLeaveDataFromSheet(sheetId, sheetName, studentId) {
+                const LEAVE_URL = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+                try {
+                    const response = await fetch(LEAVE_URL);
+                    if (!response.ok) throw new Error(`Network error for sheet ${sheetName}`);
+                    
+                    const text = await response.text();
+                    const jsonString = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+                    const data = JSON.parse(jsonString);
 
-                if (data.status === 'error') throw new Error('Google Sheet API error for leave data.');
+                    if (data.status === 'error') throw new Error(`API error for sheet ${sheetName}`);
 
-                const rows = data.table.rows;
-                // ជួរឈរ C គឺ index 2 (ID), ជួរឈរ G គឺ index 6 (Leave Status)
-                for (const row of rows) {
-                    if (row.c && row.c[2]?.v == studentId) {
-                        return row.c[6]?.v || null;
+                    const rows = data.table.rows;
+                    // ជួរឈរ C គឺ index 2 (ID), ជួរឈរ G គឺ index 6 (Leave Status)
+                    for (const row of rows) {
+                        if (row.c && row.c[2]?.v == studentId) {
+                            return row.c[6]?.v || null;
+                        }
                     }
+                    return null;
+                } catch (error) {
+                    console.error(`Could not fetch leave data from ${sheetName}:`, error);
+                    return 'FETCH_ERROR'; // Return a special string to indicate failure
                 }
-                return null; // រកមិនឃើញកំណត់ត្រាច្បាប់
             }
             
             // NEW: មុខងារថ្មីសម្រាប់គ្រប់គ្រងស្ថានភាពប៊ូតុង
@@ -540,7 +547,18 @@
                 statusMessage.textContent = 'កំពុងពិនិត្យកាលវិភាគ និងការសុំច្បាប់...';
 
                 try {
-                    const leaveStatus = await fetchLeaveData(currentStudent.id);
+                    // Fetch leave data from both sheets in parallel
+                    const [leaveStatus, crbLeaveStatus] = await Promise.all([
+                        fetchLeaveDataFromSheet(LEAVE_SHEET_ID, LEAVE_SHEET_NAME, currentStudent.id),
+                        fetchLeaveDataFromSheet(CRB_LEAVE_SHEET_ID, CRB_LEAVE_SHEET_NAME, currentStudent.id)
+                    ]);
+                    
+                    // Handle potential fetch errors
+                    if (leaveStatus === 'FETCH_ERROR' || crbLeaveStatus === 'FETCH_ERROR') {
+                        statusMessage.textContent = 'មិនអាចពិនិត្យមើលបញ្ជីច្បាប់បានទេ។';
+                        return;
+                    }
+
                     const schedule = currentStudent.schedule;
 
                     const now = new Date();
@@ -552,14 +570,20 @@
                     let canCheckIn = false;
                     let canCheckOut = false;
 
-                    // 1. ពិនិត្យការសុំច្បាប់
-                    if (leaveStatus === 'មួយថ្ងៃ') {
+                    // 1. Combine and check leave statuses
+                    const cannotCheckIn = (leaveStatus === 'មួយព្រឹក' || leaveStatus === 'មួយថ្ងៃ') ||
+                                          (crbLeaveStatus === 'មួយព្រឹក' || crbLeaveStatus === 'មួយថ្ងៃ' || crbLeaveStatus === 'ពេលយប់');
+
+                    const cannotCheckOut = (leaveStatus === 'មួយរសៀល' || leaveStatus === 'មួយថ្ងៃ') ||
+                                           (crbLeaveStatus === 'មួយរសៀល' || crbLeaveStatus === 'មួយថ្ងៃ' || crbLeaveStatus === 'ពេលយប់');
+                    
+                    if (cannotCheckIn && cannotCheckOut) {
                         status = 'អ្នកបានសុំច្បាប់មួយថ្ងៃ។';
                     } else {
-                        const checkInAllowedByLeave = leaveStatus !== 'មួយព្រឹក';
-                        const checkOutAllowedByLeave = leaveStatus !== 'មួយរសៀល';
+                        const checkInAllowedByLeave = !cannotCheckIn;
+                        const checkOutAllowedByLeave = !cannotCheckOut;
                         
-                        // 2. ពិនិត្យកាលវិភាគ និងម៉ោង
+                        // 2. Check schedule and time
                         const timeWindows = getTimeWindowsForSchedule(todaySchedule, dayOfWeek);
                         if (!timeWindows) {
                             status = 'ថ្ងៃនេះមិនមានកាលវិភាគទេ។';
@@ -570,7 +594,7 @@
                             if (checkInAllowedByLeave && isCheckInTime) canCheckIn = true;
                             if (checkOutAllowedByLeave && isCheckOutTime) canCheckOut = true;
 
-                            // បង្កើតសារបង្ហាញស្ថានភាព
+                            // Create status message
                             if (canCheckIn || canCheckOut) {
                                 status = 'អ្នកអាច Check In ឬ Check Out បាន។';
                             } else if (!isCheckInTime && !isCheckOutTime) {
@@ -713,5 +737,4 @@
 
 </body>
 </html>
-
 
