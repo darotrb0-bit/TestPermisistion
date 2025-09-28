@@ -232,17 +232,37 @@
             let isVerifying = false; 
 
             // --- ការគ្រប់គ្រង Session ---
-            function checkForSavedSession() {
+            async function checkForSavedSession() {
                 const savedStudentJSON = localStorage.getItem('loggedInStudent');
                 if (savedStudentJSON) {
+                    // Session exists, fetch fresh data before showing the page
+                    loader.classList.remove('hidden');
+                    loader.querySelector('p').textContent = 'កំពុងធ្វើបច្ចុប្បន្នភាពទិន្នន័យ...';
+                    
                     try {
-                        const student = JSON.parse(savedStudentJSON);
-                        showAttendancePage(student);
+                        // Load models and data in parallel
+                        await Promise.all([loadModels(), fetchData()]);
+
+                        const studentFromLocal = JSON.parse(savedStudentJSON);
+                        // Now that fetchData() has run, studentData is populated.
+                        // Find the full student object from the fresh data.
+                        const fullStudentObject = studentData.find(s => s.id === studentFromLocal.id);
+
+                        if (fullStudentObject) {
+                            // We found the student with their latest schedule. Proceed.
+                            await showAttendancePage(fullStudentObject);
+                        } else {
+                            // The student is no longer in the sheet, treat as logged out.
+                            console.log("Logged in user not found in current sheet. Logging out.");
+                            logout();
+                        }
                     } catch (e) {
-                        localStorage.removeItem('loggedInStudent');
-                        initializeLoginForm();
+                        // Corrupted local storage or fetch error
+                        console.error("Failed to restore session:", e);
+                        logout(); // Clear session and show login form
                     }
                 } else {
+                    // No session, normal login flow
                     initializeLoginForm();
                 }
             }
@@ -693,4 +713,5 @@
 
 </body>
 </html>
+
 
