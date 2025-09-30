@@ -108,8 +108,7 @@
     </div>
 
     <!-- 
-      បិទភ្ជាប់ Link សំឡេងសាធារណៈរបស់អ្នកនៅត្រង់ src ខាងក្រោមនេះ
-      ឧទាហរណ៍៖ src="https://files.catbox.moe/xxxxxx.mp3"
+      Link សំឡេង MP3 ត្រូវបានធ្វើបច្ចុប្បន្នភាពនៅទីនេះ
     -->
     <audio id="alarmSound" src="https://files.catbox.moe/1ohn74.mp3" preload="auto" loop></audio>
 
@@ -172,7 +171,8 @@
         };
         
         closeModalBtn.addEventListener('click', () => {
-            sirenSound.stop();
+            // សំឡេងនឹងមិនបិទទេនៅពេលចុចប៊ូតុងនេះ
+            // វានឹងបិទដោយស្វ័យប្រវត្តិនៅពេលអ្នកប្រើប្រាស់ត្រលប់ចូលក្នុងតំបន់វិញប៉ុណ្ណោះ។
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { warningModal.classList.add('hidden'); }, 150);
@@ -262,4 +262,5 @@
     </script>
 </body>
 </html>
+
 
