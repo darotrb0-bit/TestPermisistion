@@ -9,58 +9,74 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
-    <!-- បញ្ចូល Tailwind CSS សម្រាប់ភាពស្រស់ស្អាត -->
+    <!-- បញ្ចូល Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- បញ្ចូល Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* កំណត់ទំហំរបស់ផែនទីឲ្យសមស្រប */
-        #map { 
-            height: 400px; 
-            width: 100%;
+        body {
+            font-family: 'Kantumruy Pro', sans-serif;
+        }
+        /* Animation សម្រាប់ពេល Status ផ្លាស់ប្តូរ */
+        .flash-animation {
+            animation: flash 0.7s ease-out;
+        }
+        @keyframes flash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans p-4 md:p-8">
+<body class="bg-slate-100 p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6">
-        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-4">ប្រព័ន្ធត្រួតពិនិត្យវត្តមានតាមទីតាំង</h1>
-        <p class="text-center text-gray-600 mb-6">ប្រព័ន្ធនេះនឹងតាមដានទីតាំងរបស់អ្នក ហើយបង្ហាញថាតើអ្នកកំពុងស្ថិតនៅក្នុងតំបន់ដែលបានកំណត់ឬអត់។</p>
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-slate-200">
+        <div class="flex items-center justify-center gap-3 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <h1 class="text-2xl md:text-3xl font-bold text-center text-slate-800">ប្រព័ន្ធត្រួតពិនិត្យវត្តមាន</h1>
+        </div>
+        <p class="text-center text-slate-500 mb-6 max-w-2xl mx-auto">កម្មវិធីនឹងតាមដានទីតាំងរបស់អ្នកផ្ទាល់ ហើយពិនិត្យមើលថាតើអ្នកស្ថិតនៅក្នុងតំបន់ក្រុមហ៊ុនឬអត់។</p>
 
         <!-- កន្លែងសម្រាប់បង្ហាញផែនទី -->
-        <div id="map" class="rounded-lg border-2 border-gray-300"></div>
+        <div id="map" class="rounded-xl border-2 border-slate-200 shadow-inner"></div>
 
         <!-- កន្លែងសម្រាប់បង្ហាញស្ថានភាព -->
-        <div id="status" class="mt-6 p-4 rounded-lg text-white font-bold text-lg text-center transition-colors duration-500 bg-gray-400">
-            កំពុងរង់ចាំទិន្នន័យទីតាំង...
+        <div id="status" class="mt-6 p-4 rounded-xl text-white font-bold text-lg text-center transition-all duration-500 bg-slate-400 flex items-center justify-center gap-3">
+            <svg id="status-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="status-text">កំពុងរង់ចាំទិន្នន័យទីតាំង...</span>
         </div>
-        <div id="coords" class="mt-2 text-center text-sm text-gray-500"></div>
+        <div id="coords" class="mt-3 text-center text-sm text-slate-500 bg-slate-100 p-2 rounded-lg">...</div>
     </div>
 
     <!-- Modal សម្រាប់បង្ហាញសារព្រមាន -->
     <div id="warningModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
-        <div class="bg-white rounded-lg p-6 md:p-8 shadow-xl max-w-sm mx-auto text-center transform transition-all scale-95 opacity-0" id="modalContent">
+        <div class="bg-white rounded-2xl p-6 md:p-8 shadow-xl max-w-sm mx-auto text-center transform transition-all scale-95 opacity-0" id="modalContent">
             <div class="text-red-500 mb-4">
-                <!-- រូបសញ្ញា Icon ព្រមាន -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">ការព្រមាន!</h3>
-            <p class="text-gray-700 mb-6">អ្នកបានចាកចេញពីតំបន់ដែលបានកំណត់។ វត្តមានរបស់អ្នកអាចនឹងមិនត្រូវបានកត់ត្រា។</p>
-            <button id="closeModalBtn" class="bg-red-500 text-white font-bold py-2 px-8 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors">យល់ព្រម</button>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">ការព្រមាន!</h3>
+            <p class="text-slate-700 mb-6">អ្នកបានចាកចេញពីតំបន់កំណត់។ វត្តមានរបស់អ្នកអាចនឹងមិនត្រូវបានកត់ត្រាឡើយ។</p>
+            <button id="closeModalBtn" class="bg-red-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 w-full transition-all duration-300 transform hover:scale-105">យល់ព្រម</button>
         </div>
     </div>
 
-
     <script>
-        // --- ការកំណត់ค่าเริ่มต้น ---
-
         const allowedAreaCoords = [
-            // **បានកែតម្រូវលំដាប់នៃកូអរដោនេ ដើម្បីឲ្យគូសចេញជារាងបួនជ្រុងត្រឹមត្រូវ**
-            [11.415296921108219, 104.76411630326837], // ជ្រុងទី២
-            [11.41524959639537, 104.76421353334031], // ជ្រុងទី១
-            [11.4136513648048, 104.76344030651754],   // ជ្រុងទី៣
-            [11.413703948114726, 104.76333502981896]   // ជ្រុងទី៤
+            [11.415296921108219, 104.76411630326837],
+            [11.41524959639537, 104.76421353334031],
+            [11.4136513648048, 104.76344030651754],
+            [11.413703948114726, 104.76333502981896]
         ];
 
         const mapCenter = [11.414507, 104.763789];
@@ -71,32 +87,35 @@
         }).addTo(map);
 
         const allowedAreaPolygon = L.polygon(allowedAreaCoords, {
-            color: 'blue',
-            fillColor: '#3388ff',
+            color: '#2563eb',
+            weight: 2,
+            fillColor: '#60a5fa',
             fillOpacity: 0.3
         }).addTo(map);
 
         map.fitBounds(allowedAreaPolygon.getBounds());
-        allowedAreaPolygon.bindPopup("<b>តំបន់ដែលបានកំណត់</b><br>អ្នកត្រូវតែស្ថិតនៅក្នុងតំបន់នេះ។");
+        allowedAreaPolygon.bindPopup("<b>តំបន់ក្រុមហ៊ុន</b><br>អ្នកត្រូវតែស្ថិតនៅក្នុងតំបន់នេះ។");
 
-        // --- ផ្នែកតรรកវិជ្ជា (Logic) ---
-        
         const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('status-text');
+        const statusIcon = document.getElementById('status-icon');
         const coordsDiv = document.getElementById('coords');
         const warningModal = document.getElementById('warningModal');
         const modalContent = document.getElementById('modalContent');
         const closeModalBtn = document.getElementById('closeModalBtn');
 
         let userMarker = null;
-        let wasInside = null; // អថេរសម្រាប់ចងចាំស្ថានភាពមុន (null, true, or false)
+        let wasInside = null;
 
-        // Function បិទ Modal
+        const iconInside = `<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+        const iconOutside = `<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+        const iconError = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+
+
         closeModalBtn.addEventListener('click', () => {
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                warningModal.classList.add('hidden');
-            }, 150); // រង់ចាំ animation ចប់
+            setTimeout(() => { warningModal.classList.add('hidden'); }, 150);
         });
 
         function isInsideArea(userLatLng, polygon) {
@@ -111,63 +130,74 @@
             }
             return isInside;
         }
+        
+        function updateStatusUI(isInside, isInitial) {
+            statusDiv.classList.remove('bg-green-500', 'bg-red-500', 'bg-slate-400');
+            if (isInside) {
+                statusText.textContent = 'ត្រឹមត្រូវ៖ អ្នកកំពុងស្ថិតនៅក្នុងតំបន់';
+                statusIcon.innerHTML = iconInside;
+                statusDiv.classList.add('bg-green-500');
+            } else {
+                statusText.textContent = 'មិនត្រឹមត្រូវ៖ អ្នកនៅក្រៅតំបន់កំណត់';
+                statusIcon.innerHTML = iconOutside;
+                statusDiv.classList.add('bg-red-500');
+            }
+            
+            if (!isInitial) {
+                statusDiv.classList.add('flash-animation');
+                statusDiv.addEventListener('animationend', () => {
+                    statusDiv.classList.remove('flash-animation');
+                }, { once: true });
+            }
+        }
 
         function onLocationFound(e) {
             const userLatLng = e.latlng;
-            const latitude = userLatLng.lat.toFixed(6);
-            const longitude = userLatLng.lng.toFixed(6);
-
-            coordsDiv.textContent = `រយៈទទឹង: ${latitude}, រយៈបណ្តោយ: ${longitude}`;
+            coordsDiv.textContent = `កូអរដោនេ: ${userLatLng.lat.toFixed(6)}, ${userLatLng.lng.toFixed(6)}`;
 
             if (!userMarker) {
-                userMarker = L.marker(userLatLng).addTo(map).bindPopup("អ្នកនៅទីនេះ!").openPopup();
+                userMarker = L.marker(userLatLng).addTo(map).bindPopup("<b>អ្នកនៅទីនេះ!</b>").openPopup();
             } else {
                 userMarker.setLatLng(userLatLng);
             }
 
             const isInside = isInsideArea(userLatLng, allowedAreaPolygon);
+            const isInitial = wasInside === null;
 
-            // **ផ្នែកឡូហ្ស៊ិកថ្មីសម្រាប់បង្ហាញសារព្រមាន**
-            // ពិនិត្យមើលថាតើ User ទើបតែចេញពីតំបន់ឬអត់
-            if (wasInside === true && !isInside) {
-                // បង្ហាញ Modal
-                warningModal.classList.remove('hidden');
-                setTimeout(() => {
-                    modalContent.classList.remove('scale-95', 'opacity-0');
-                    modalContent.classList.add('scale-100', 'opacity-100');
-                }, 10);
+            if (wasInside !== isInside) {
+                updateStatusUI(isInside, isInitial);
+                if (wasInside === true && !isInside) {
+                    warningModal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modalContent.classList.remove('scale-95', 'opacity-0');
+                        modalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }
             }
-            
-            // ធ្វើបច្ចុប្បន្នភាពស្ថានភាពចុងក្រោយ
             wasInside = isInside;
-
-            // ធ្វើបច្ចុប្បន្នភាព Status UI ដូចមុន
-            if (isInside) {
-                statusDiv.textContent = 'ត្រឹមត្រូវ៖ អ្នកកំពុងស្ថិតនៅក្នុងតំបន់';
-                statusDiv.classList.remove('bg-red-500', 'bg-gray-400');
-                statusDiv.classList.add('bg-green-500');
-            } else {
-                statusDiv.textContent = 'មិនត្រឹមត្រូវ៖ អ្នកបានចាកចេញពីតំបន់កំណត់';
-                statusDiv.classList.remove('bg-green-500', 'bg-gray-400');
-                statusDiv.classList.add('bg-red-500');
-            }
         }
 
         function onLocationError(e) {
-            statusDiv.textContent = `មានបញ្ហា៖ ${e.message}`;
-            statusDiv.classList.remove('bg-green-500', 'bg-gray-400');
+            let userFriendlyMessage = `មានបញ្ហា៖ ${e.message}`;
+            
+            // **កូដដែលបានធ្វើបច្ចុប្បន្នភាព**
+            // ពិនិត្យរកមើលសារបញ្ហាសុវត្ថិភាព ហើយប្តូរវាទៅជាភាសាខ្មែរ
+            if (e.message.toLowerCase().includes("disabled in this document")) {
+                userFriendlyMessage = "មានបញ្ហា៖ ការចូលប្រើទីតាំងត្រូវបានបិទនៅក្នុងផ្ទាំង Preview នេះ។";
+            } else if (e.code === 1) { // User denied geolocation
+                 userFriendlyMessage = "មានបញ្ហា៖ អ្នកមិនបានអនុញ្ញាតឲ្យមានការចូលប្រើទីតាំងទេ។";
+            }
+
+            statusText.textContent = userFriendlyMessage;
+            statusIcon.innerHTML = iconError;
+            statusDiv.classList.remove('bg-green-500', 'bg-slate-400');
             statusDiv.classList.add('bg-orange-500');
         }
 
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
 
-        map.locate({
-            watch: true, 
-            setView: false,
-            enableHighAccuracy: true
-        });
-
+        map.locate({ watch: true, setView: false, enableHighAccuracy: true });
     </script>
 </body>
 </html>
