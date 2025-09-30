@@ -93,7 +93,7 @@
         </div>
     </div>
 
-    <!-- Modal សម្រាប់បង្ហាញសារព្រមាន -->
+    <!-- Modal សម្រាប់បង្ហាញសារព្រមាន (គ្មានប៊ូតុង) -->
     <div id="warningModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white rounded-2xl p-6 md:p-8 shadow-xl max-w-sm mx-auto text-center transform transition-all scale-95 opacity-0" id="modalContent">
             <div class="text-red-500 mb-4">
@@ -102,14 +102,10 @@
                 </svg>
             </div>
             <h3 class="text-xl font-bold text-slate-800 mb-2">ការព្រមាន!</h3>
-            <p class="text-slate-700 mb-6">អ្នកបានចាកចេញពីតំបន់កំណត់។ វត្តមានរបស់អ្នកអាចនឹងមិនត្រូវបានកត់ត្រាឡើយ។</p>
-            <button id="closeModalBtn" class="bg-red-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 w-full transition-all duration-300 transform hover:scale-105">យល់ព្រម</button>
+            <p class="text-slate-700">អ្នកបានចាកចេញពីតំបន់កំណត់។</p>
         </div>
     </div>
 
-    <!-- 
-      Link សំឡេង MP3 ត្រូវបានធ្វើបច្ចុប្បន្នភាពនៅទីនេះ
-    -->
     <audio id="alarmSound" src="https://files.catbox.moe/1ohn74.mp3" preload="auto" loop></audio>
 
 
@@ -145,7 +141,6 @@
         const distanceDiv = document.getElementById('distance');
         const warningModal = document.getElementById('warningModal');
         const modalContent = document.getElementById('modalContent');
-        const closeModalBtn = document.getElementById('closeModalBtn');
         
         let userMarker = null;
         let wasInside = null;
@@ -169,14 +164,6 @@
                 alarmAudio.currentTime = 0;
             }
         };
-        
-        closeModalBtn.addEventListener('click', () => {
-            // សំឡេងនឹងមិនបិទទេនៅពេលចុចប៊ូតុងនេះ
-            // វានឹងបិទដោយស្វ័យប្រវត្តិនៅពេលអ្នកប្រើប្រាស់ត្រលប់ចូលក្នុងតំបន់វិញប៉ុណ្ណោះ។
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { warningModal.classList.add('hidden'); }, 150);
-        });
 
         function isInsideArea(userLatLng, polygon) {
             let isInside = false;
@@ -233,9 +220,20 @@
                 updateStatusUI(isInside, isInitial);
                 if (wasInside === true && !isInside) {
                     sirenSound.play();
+                    // បង្ហាញ Modal
                     warningModal.classList.remove('hidden');
-                    setTimeout(() => modalContent.classList.add('scale-100', 'opacity-100'), 10);
-                } else {
+                    setTimeout(() => {
+                        modalContent.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+
+                    // បិទ Modal ដោយស្វ័យប្រវត្តិក្រោយ 6 វិនាទី
+                    setTimeout(() => {
+                        modalContent.classList.remove('scale-100', 'opacity-100');
+                        modalContent.classList.add('scale-95', 'opacity-0');
+                        setTimeout(() => { warningModal.classList.add('hidden'); }, 150);
+                    }, 6000); 
+
+                } else if (isInside) { 
                     sirenSound.stop();
                 }
             }
@@ -262,5 +260,4 @@
     </script>
 </body>
 </html>
-
 
