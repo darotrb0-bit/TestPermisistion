@@ -170,20 +170,22 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
-                // --- សំឡេងសារ៉ែនអាសន្នបែបថ្មី ---
-                // 1. ប្រភេទសំឡេង: 'sawtooth' ផ្តល់សំឡេងរាងគ្រើម និងខ្លាំង
-                oscillator.type = 'sawtooth';
+                // --- សំឡេងបែបប្រកាសអាសន្ន ---
+                // 1. ប្រភេទសំឡេង: 'sine' សម្រាប់សំឡេងស្អាតដូចកណ្តឹង
+                oscillator.type = 'sine';
+                
+                // 2. កម្រិតសំឡេង
+                gainNode.gain.setValueAtTime(0.3, now);
 
-                // 2. កម្រិតเสียงสูงต่ำ: ចាប់ផ្តើមពីទាប ហើយឡើងទៅខ្ពស់เร็วๆ
-                oscillator.frequency.setValueAtTime(440, now);
-                oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                // 3. កម្រិតเสียงสูงต่ำ: បង្កើតសំឡេងពីរថ្នាក់ (Ding-Dong)
+                oscillator.frequency.setValueAtTime(523, now); // សំឡេងទី១ (ខ្ពស់)
+                oscillator.frequency.setValueAtTime(440, now + 0.25); // សំឡេងទី២ (ទាបជាង)
 
-                // 3. កម្រិតសំឡេង
-                gainNode.gain.setValueAtTime(0.25, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+                // ធ្វើឲ្យសំឡេងค่อยๆเงียบទៅវិញ
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
                 
                 oscillator.start(now);
-                oscillator.stop(now + 0.2); 
+                oscillator.stop(now + 1.2); 
             }
 
             return {
@@ -193,8 +195,8 @@
                     if (intervalId) clearInterval(intervalId);
                     
                     playAlarm(); 
-                    // 4. ល្បឿននៃសំឡេងប៊ីប
-                    intervalId = setInterval(playAlarm, 200); // ធ្វើម្តងទៀតរៀងរាល់ 200ms (លឿនជាងមុន)
+                    // 4. ល្បឿននៃការធ្វើซ้ำ
+                    intervalId = setInterval(playAlarm, 1500); // ធ្វើម្តងទៀតរៀងរាល់ 1.5 វិនាទី
                 },
                 stop: () => {
                     if (intervalId) {
@@ -297,5 +299,4 @@
     </script>
 </body>
 </html>
-
 
