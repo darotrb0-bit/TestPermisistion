@@ -67,6 +67,12 @@
                  <h2 class="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">កូអរដោនេរបស់អ្នក</h2>
                  <div id="coords" class="text-center text-lg text-slate-700 font-mono bg-slate-200 p-3 rounded-lg break-words">...</div>
             </div>
+            
+            <!-- Card សម្រាប់គម្លាតពីតំបន់ -->
+            <div class="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-200">
+                 <h2 class="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">គម្លាតពីចំណុចកណ្តាលតំបន់</h2>
+                 <div id="distance" class="text-center text-lg text-slate-700 font-mono bg-slate-200 p-3 rounded-lg break-words">...</div>
+            </div>
 
             <!-- ការពន្យល់ -->
             <div class="mt-8 pt-6 border-t border-slate-200 text-sm text-slate-500 space-y-3">
@@ -130,6 +136,7 @@
         const statusText = document.getElementById('status-text');
         const statusIcon = document.getElementById('status-icon');
         const coordsDiv = document.getElementById('coords');
+        const distanceDiv = document.getElementById('distance');
         const warningModal = document.getElementById('warningModal');
         const modalContent = document.getElementById('modalContent');
         const closeModalBtn = document.getElementById('closeModalBtn');
@@ -218,6 +225,12 @@
         function onLocationFound(e) {
             const userLatLng = e.latlng;
             coordsDiv.textContent = `${userLatLng.lat.toFixed(6)}, ${userLatLng.lng.toFixed(6)}`;
+
+            // គណនា និងបង្ហាញគម្លាត
+            const polygonCenter = allowedAreaPolygon.getBounds().getCenter();
+            const distance = userLatLng.distanceTo(polygonCenter);
+            distanceDiv.textContent = `≈ ${distance.toFixed(0)} ម៉ែត្រ`;
+
             if (!userMarker) {
                 userMarker = L.marker(userLatLng).addTo(map).bindPopup("<b>អ្នកនៅទីនេះ!</b>").openPopup();
             } else {
