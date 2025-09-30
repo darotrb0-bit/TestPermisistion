@@ -70,7 +70,7 @@
             
             <!-- Card សម្រាប់គម្លាតពីតំបន់ -->
             <div class="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-200">
-                 <h2 class="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">គម្លាតពីចំណុចកណ្តាលតំបន់</h2>
+                 <h2 class="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wider">ចម្ងាយពីតំបន់កំណត់</h2>
                  <div id="distance" class="text-center text-lg text-slate-700 font-mono bg-slate-200 p-3 rounded-lg break-words">...</div>
             </div>
 
@@ -149,7 +149,9 @@
         const iconError = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
         
         const sirenSound = (() => {
-            let audioCtx, oscillator, gainNode;
+            let audioCtx;
+            let intervalId = null;
+
             function setup() {
                 if (audioCtx) return;
                 try {
@@ -158,28 +160,40 @@
                     console.error("Web Audio API is not supported in this browser.")
                 }
             }
+
+            function playBeep() {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine'; // ប្រើ 'sine' wave សម្រាប់សំឡេងប៊ីបស្អាត
+                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // កំណត់កម្រិតសំឡេងប៊ីប
+                
+                gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                // បន្ថយសំឡេងលឿនៗដើម្បីបង្កើតជា effect "ប៊ីប"
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            }
+
             return {
                 play: () => {
                     setup();
                     if (!audioCtx) return;
-                    if (oscillator) oscillator.stop();
-                    oscillator = audioCtx.createOscillator();
-                    gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sawtooth';
-                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-                    oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.5);
-                    oscillator.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 1);
-                    oscillator.start();
-                    oscillator.loop = true;
+                    if (intervalId) clearInterval(intervalId);
+                    
+                    playBeep(); // ចាក់សំឡេងប៊ីបភ្លាមៗ
+                    intervalId = setInterval(playBeep, 400); // ធ្វើម្តងទៀតរៀងរាល់ 400 មីលីវិនាទី
                 },
                 stop: () => {
-                    if (gainNode && oscillator && audioCtx) {
-                        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-                        oscillator.stop(audioCtx.currentTime + 0.5);
-                        oscillator = null;
+                    // បញ្ឈប់ការចាក់ซ้ำ
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                        intervalId = null;
                     }
                 }
             };
@@ -226,17 +240,23 @@
             const userLatLng = e.latlng;
             coordsDiv.textContent = `${userLatLng.lat.toFixed(6)}, ${userLatLng.lng.toFixed(6)}`;
 
+            const isInside = isInsideArea(userLatLng, allowedAreaPolygon);
+
             // គណនា និងបង្ហាញគម្លាត
-            const polygonCenter = allowedAreaPolygon.getBounds().getCenter();
-            const distance = userLatLng.distanceTo(polygonCenter);
-            distanceDiv.textContent = `≈ ${distance.toFixed(0)} ម៉ែត្រ`;
+            if (isInside) {
+                distanceDiv.textContent = `0 ម៉ែត្រ`;
+            } else {
+                const polygonCenter = allowedAreaPolygon.getBounds().getCenter();
+                const distance = userLatLng.distanceTo(polygonCenter);
+                distanceDiv.textContent = `≈ ${distance.toFixed(0)} ម៉ែត្រ`;
+            }
 
             if (!userMarker) {
                 userMarker = L.marker(userLatLng).addTo(map).bindPopup("<b>អ្នកនៅទីនេះ!</b>").openPopup();
             } else {
                 userMarker.setLatLng(userLatLng);
             }
-            const isInside = isInsideArea(userLatLng, allowedAreaPolygon);
+            
             const isInitial = wasInside === null;
             if (wasInside !== isInside) {
                 updateStatusUI(isInside, isInitial);
@@ -271,4 +291,5 @@
     </script>
 </body>
 </html>
+
 
