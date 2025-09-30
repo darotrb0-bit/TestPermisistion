@@ -107,6 +107,13 @@
         </div>
     </div>
 
+    <!-- 
+      បិទភ្ជាប់ Link សំឡេងសាធារណៈរបស់អ្នកនៅត្រង់ src ខាងក្រោមនេះ
+      ឧទាហរណ៍៖ src="https://files.catbox.moe/xxxxxx.mp3"
+    -->
+    <audio id="alarmSound" src="https://files.catbox.moe/1ohn74.mp3" preload="auto" loop></audio>
+
+
     <script>
         const allowedAreaCoords = [
             [11.415296921108219, 104.76411630326837],
@@ -140,7 +147,7 @@
         const warningModal = document.getElementById('warningModal');
         const modalContent = document.getElementById('modalContent');
         const closeModalBtn = document.getElementById('closeModalBtn');
-
+        
         let userMarker = null;
         let wasInside = null;
 
@@ -148,65 +155,22 @@
         const iconOutside = `<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
         const iconError = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
         
-        const sirenSound = (() => {
-            let audioCtx;
-            let intervalId = null;
-
-            function setup() {
-                if (audioCtx) return;
-                try {
-                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                } catch(e) {
-                    console.error("Web Audio API is not supported in this browser.")
+        const alarmAudio = document.getElementById('alarmSound');
+        const sirenSound = {
+            play: () => {
+                const playPromise = alarmAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.error("ការចាក់សំឡេងត្រូវបានរារាំង:", error);
+                    });
                 }
+            },
+            stop: () => {
+                alarmAudio.pause();
+                alarmAudio.currentTime = 0;
             }
-            
-            function playAlarm() {
-                if (!audioCtx) return;
-                const now = audioCtx.currentTime;
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                // --- សំឡេងបែបប្រកាសអាសន្ន ---
-                // 1. ប្រភេទសំឡេង: 'sine' សម្រាប់សំឡេងស្អាតដូចកណ្តឹង
-                oscillator.type = 'sine';
-                
-                // 2. កម្រិតសំឡេង
-                gainNode.gain.setValueAtTime(0.3, now);
-
-                // 3. កម្រិតเสียงสูงต่ำ: បង្កើតសំឡេងពីរថ្នាក់ (Ding-Dong)
-                oscillator.frequency.setValueAtTime(523, now); // សំឡេងទី១ (ខ្ពស់)
-                oscillator.frequency.setValueAtTime(440, now + 0.25); // សំឡេងទី២ (ទាបជាង)
-
-                // ធ្វើឲ្យសំឡេងค่อยๆเงียบទៅវិញ
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
-                
-                oscillator.start(now);
-                oscillator.stop(now + 1.2); 
-            }
-
-            return {
-                play: () => {
-                    setup();
-                    if (!audioCtx) return;
-                    if (intervalId) clearInterval(intervalId);
-                    
-                    playAlarm(); 
-                    // 4. ល្បឿននៃការធ្វើซ้ำ
-                    intervalId = setInterval(playAlarm, 1500); // ធ្វើម្តងទៀតរៀងរាល់ 1.5 វិនាទី
-                },
-                stop: () => {
-                    if (intervalId) {
-                        clearInterval(intervalId);
-                        intervalId = null;
-                    }
-                }
-            };
-        })();
-
+        };
+        
         closeModalBtn.addEventListener('click', () => {
             sirenSound.stop();
             modalContent.classList.remove('scale-100', 'opacity-100');
@@ -250,7 +214,6 @@
 
             const isInside = isInsideArea(userLatLng, allowedAreaPolygon);
 
-            // គណនា និងបង្ហាញគម្លាត
             if (isInside) {
                 distanceDiv.textContent = `0 ម៉ែត្រ`;
             } else {
